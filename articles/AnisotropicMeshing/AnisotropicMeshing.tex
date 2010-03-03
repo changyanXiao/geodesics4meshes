@@ -1,0 +1,1413 @@
+\chapter{Geodesic Sampling}
+\label{chap-sampling}
+
+In order to acquire discrete samples from a continuous Riemannian manifold, or to reduce the number of samples of finely sampled manifolds, it is important to be able to seed evenly a set of points on a manifold. This is relevant in numerical analysis to have a good accuracy in computational simulations, or in computer graphics to display 3D models with a low number of polygons. In practice, one typically wants to enforce that the samples are approximately at the same distance from each other according to a given metric. The numerical computation of geodesic distances is thus a central tool, that we are going to use both to produce the sampling and to estimate the connectivity of a triangular mesh. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Geodesic Voronoi and Delaunay Complexes}
+\label{triangulation}
+
+A sampling of a Riemannian manifold $\manif$ is a set of $N$ points $\startP = \{x_i\}_{i \in I} \subset \manif$, where $I = \{0,\ldots,N-1\}$. One can compute several topological complexes on top of this sampling. The following sections generalize the notions of Euclidean Voronoi and Delaunay diagrams to arbitrary Riemannian manifolds. This will be useful in the remaining part of this chapter to design efficient sampling schemes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Voronoi Segmentation}
+\label{subsec-voronoi-segm}
+
+The main geometrical and topological structures associated to a sampling is the Voronoi segmentation, that is at the heart of the computation of the other geodesic complexes.
+
+%%
+\paragraph{Geodesic Voronoi Diagram.}
+
+When $\startP=\{x_i\}_{i \in I}$ is finite, it
+defines a segmentation of the manifold $\manif$ into Voronoi cells 
+\eql{\label{eq-voronoi-segm-bis}
+	\voronoi(\startP) = \{\Cc_i\}_{i \in I}
+	\qandq
+	\manif = \bigcup_{i \in I} \Cc_i
+}
+as defined in \eqref{eq-voronoi-segm}.
+This segmentation can be represented using the
+partition function $\ell(x)$ defined in \eqref{eq-partion-func}.
+Note that the Voronoi cells overlap on their common boundaries.
+
+%%
+\paragraph{Geodesic Medial Axis.}
+
+The medial axis $\MedAxis(\startP)$, defined in
+\eqref{eq-medaxis-definition}, is the set of points where the distance map
+$U_\startP$ is singular. For a dense enough discrete set of points $\startP = \{ x_i
+\}_{i\in I}$, the medial axis is the boundary of the Voronoi cells, see \eqref{eq-bound-voronoi}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Delaunay Graph}
+
+%%
+\paragraph{Delaunay graph.}
+
+The geodesic Delaunay graph $\delaunay(\startP)$ of a sampling $\startP = \{x_i\}_{i \in I} \subset \manif$ is defined for $V=\{1,\ldots,n\}$ by joining points with adjacent Voronoi cells
+\eql{\label{eq-delaunay-graph} 
+	\delaunay(\startP) = \enscond{(i,j) \in I^2}{ \partial \Cc_i \cap \partial \Cc_j \neq 0 }. 
+}
+Note that a pair of indices $(i,j) \in \delaunay(\startP)$  is assumed to be non-ordered, so that $(j,i)$ denotes the same Delaunay edge.
+
+
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{0.6}{figures/geodesic-delaunay-voronoi}
+} 
+}{
+Schematic diagram of Geodesic and Delaunay. %
+}{fig-delaunay-geodesic}
+
+%%
+\paragraph{Geometric realization.}
+
+For each edge, one can consider its geodesic geometric realization 
+\eql{\label{eq-geometric-rea-delaunay}
+	\foralls (i,j) \in \delaunay(\startP), \quad
+	\ga_{i,j} \in \joining(x_i,x_j)
+} 
+which is the geodesic curve joining $x_i$ and $x_j$.
+The Delaunay graph $\delaunay(\startP)$ is thus a planar graph for this curved realization, which means that the curved edges $\ga_{i,j}$ does not intersect. This is due to the fact that $\ga_{i,j} \subset \Cc_i \cup \Cc_j$, see Section \ref{subsec-joint-propagations} that uses this fact to speed up minimal path extraction.
+
+If the manifold is embedded in Euclidean space $\manif \subset \RR^d$ for some $d>0$, 
+the geodesic realization \eqref{eq-geometric-rea-delaunay} should not be confounded with the Euclidean geometric realization $\tilde \ga_{i,j}$, which is the straight line segment
+\eql{\label{eq-geometric-rea-delaunay-eucl}
+	\foralls t \in [0,1], \quad \tilde\ga_{i,j}(t) = (1-t)x_i + t x_j. 
+}
+One should note that this straight line embedding of the graph is not necessarily a valid planar embedding, since straight edges $\tilde\ga_{i,j}$ might intersect. 
+
+% if one of $x_i$ or $x_j$ is not on $\partial\manif$, the curve $(x_i,x_j)$ is the union of the two geodesics joining the double point $w_{i,j}$ to $x_i$ and $x_j$,
+
+%%
+\paragraph{Double saddle points.}
+
+For each topological Delaunay edge $(i,j) \in \delaunay(\startP)$ corresponds a geometric realization, that is a boundary of Voronoi cells 
+\eq{
+	\foralls (i,j) \in \delaunay(\startP), \quad
+	\ga_{i,j}^* = \Cc_i \cap \Cc_j
+}
+and is called a dual edge to the primal edge $\ga_{i,j}$.
+
+A double point $x_{i,j}$ lies at the intersection of $\ga_{i,j}$ and $\ga_{i,j}^*$
+\eql{\label{eq-dfn-double-point}
+	x_{i,j} = \ga_{i,j} \cap \ga_{i,j}^* = \uargmin{x \in \ga_{i,j}^*} d(x,x_i),
+}
+as already defined in \eqref{eq-saddle-point}.
+Note that this is not necessary the point on the mediatrix $\MedAxis(\{x_i,x_j\})$ that is the closest to $x_i$ and $x_j$, because the Voronoi edge $\ga_{i,j}$ is only a sub-set of $\MedAxis(\{x_i,x_j\})$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Delaunay triangulation}
+\label{subsec-delaunay-triangl}
+
+For simplicity, we restrict ourself here to the setting of 2D manifolds, and consider triangulations of the manifold $\manif$. Although more difficult to compute, the natural extension to manifolds of dimension $d$ consists in replacing triangles with simplexes, which are convex hull of $d$ points.
+
+%%
+\paragraph{Triple points.}
+
+While $\delaunay(\startP)$ indicates an edge structure based on intersection of pairs of Voronoi cells, it is possible to define a face structure $\delaunayF(\startP)$ by looking as the intersection of three Voronoi cells
+\eql{\label{eq-dfn-del-faces}
+	\delaunayF(\startP) = \enscond{(i,j,k)}{ \Cc_i \cap \Cc_j \cap \Cc_k \neq \emptyset }.
+}
+Similarly to Delaunay edge, triple indices are not ordered, and permutations of $(i,j,k)$ denote the same face.
+For points in generic position, a non-empty intersection of three cells is a triple point
+\eql{\label{eq-dfn-triple-points}
+	\foralls (i,j,k) \in \delaunayF(\startP), \quad
+	x_{i,j,k} \in \Cc_i \cap \Cc_j \cap \Cc_k.
+}
+
+For each $(i,j,k) \in \delaunayF(\startP)$, the triple point $x_{i,j,k}$ lies at the intersection of three portions of mediatrix
+\eq{
+	x_{i,j,k} = \ga_{i,j}^* \cap \ga_{j,k}^* \cap \ga_{k,i}^*.
+}
+It thus corresponds to the geodesic extension of the classical notion of circumcenter in Euclidean geometry. 
+
+The geodesic ball of center $x_{i,j,k}$ thus contains three sampling points 
+\eq{
+	\{x_i,x_j,x_k\} \subset \partial B_{r}(x_{i,j,k})
+	\qwhereq
+	B_{r}(x) = \enscond{y \in \manif}{ d(x,y) \leq r }
+}
+for $r = d(x_i,x_{i,j,k})$. The Delaunay triangulation posses the empty circumcircle property
+\eql{\label{eq-empty-circum}
+	\foralls \ell \notin \{i,j,k\}, \quad
+	x_\ell \notin B_{r}(x_{i,j,k}).
+}
+
+The natural extension of triple points to a manifold of dimension $d$ considers the intersection of $d$ Voronoi cells. This is the geodesic generalization of the ortho-center of a $d$-dimensional simplex.
+
+% Manifold with boundary : add an $\infty$ virtual point to $I$, and a triple point can then be along the boundary $\partial \manif$.
+
+%%
+\paragraph{Triangulations.}
+
+If the sampling $\startP$ of $\manif$ is dense enough with respect to the curvature of the manifold, one can prove that the Delaunay graph is equal to the Delaunay triangulation, which means that
+\eq{
+	\foralls (i,j) \in \delaunay(\startP), \; \exists k \in I, \quad
+	(i,j,k) \in \delaunayF(\startP).
+}
+see~\cite{leibon-delaunay-manifold}. The number of points needed for the Delaunay triangulation to be valid depends on the geometry of the manifold, and in particular on its curvature, see~\cite{onishi-nbr-points}.
+
+In particular, there is no isolated edge. If the manifold does not have boundary, the Delaunay triangulation defines a valid triangulation of the manifold using the geometric realization \eqref{eq-geometric-rea-delaunay} of the edge.
+
+One can also prove that if the sampling is dense enough, then the straight line realization \eqref{eq-geometric-rea-delaunay-eucl} also gives a valid triangulation in Euclidean space in which the manifold is embedded. This Euclidean triangulation, whose edge are straight segments, is useful for many applications as detailed in Sections \ref{sec-domain-meshing}, \ref{subsection-aniso-image} and \ref{subsec-fp-meshing}.
+
+%%
+\paragraph{Delaunay/Voronoi geodesic duality.}
+
+A primal edge $\ga_{i,j}$ links two (primal) samples $x_i,x_j \in \startP$, while the corresponding dual edge $\ga_{i,j}^*$ links (dual) tripple points $x_{i,j,k}, x_{i,j,\ell}$. The set of tripple points 
+\eq{
+	\startP^* = \enscond{x_{i,j,k}}{ (i,j,k) \in \delaunayF(\startP) }
+}
+thus constitutes a dual sampling of the manifold $\manif$, that is connected by dual edges to form polygons, that are not necessarily triangles.
+
+%%
+\paragraph{Euclidean Voronoi and Delaunay.}
+
+The special case of the Euclidean metric $\tensor{x} = \Id_2$ in $\manif=\RR^2$ has been extensively studied. The Delaunay triangulation~\cite{delaunay-triangulation} of a sampling $\startP$ is a valid triangulation of the convex hull of $\startP$, that is unique for point in generic position. It is characterized by the fact that the circumcircle of a triangle $(x_i,x_j,x_k)$ for $ (i,j,k) \in \delaunayF$ does not contains any other point, which corresponds to condition \eqref{eq-empty-circum}. There exists several iterative algorithms to find the triangulation of a set of $N$ points in $O(N\log(N))$ operations, see for instance~\cite{berg-cg-book}. 
+
+Figure \ref{fig-delaunay-euclidean} shows an example of Euclidean Delaunay triangulation.
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{0.6}{figures/delaunay-euclidean}
+} 
+}{
+Example of Voronoi diagram (dashed) and Delaunay triangulation for the Euclidean metric, with the circumcenter in light gray. %
+}{fig-delaunay-euclidean}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Numerical Computation of Geodesic Complexes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Geodesic Voronoi Computation}
+\label{subsec-voronoi-segm-comp}
+
+The Voronoi segmentation \eqref{eq-voronoi-segm-bis} can be approximately computed in parallel to either a
+Fast Marching propagation or an iterative scheme.  The partition function $\ell(x)$
+is discretized, so that $\ell_i$ is intended to be an approximation of $\ell(x_i)$.
+
+Each time the update operator 
+\eq{
+	u_i \leftarrow \FMupdate_i(u)
+}
+is applied on a point $x_i$, by either an iterative or a fast marching algorithm, one also applies an update operator to the partition function
+\eq{
+	\ell_i \leftarrow \tilde\FMupdate_i(u,\ell).
+}
+This udpate is computed by assigning the index of the closest neighboring point used to perform the update. More precisely, if \eq{
+	\FMupdate_i(u) = v_{i,j,k}
+	\qwhereq
+	t_{i,j,k} \in \oneRing(x_i)
+}
+where $v_{i,j,k}$ is defined in \eqref{eq-fixed-pt-discr-detail}, one defines
+\eq{
+	\tilde\FMupdate_i(u,\ell) = 
+	\choice{
+		\ell_j \qifq |v_{i,j,k} - u_k| < |v_{i,j,k} - u_j|, \\
+		\ell_k \quad\text{otherwise}.
+	}
+}
+
+Section \eqref{subsec-voronoi-segm} shows some examples of application of this Voronoi tessellation for image segmentation.
+Figure \ref{fig-voronoi-mesh} shows examples of Voronoi cells on a surface embedded in $\RR^3$. 
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{0.32}{voronoi-mesh/bunny-voronoi-01}&
+\image{geodesic-sampling}{0.32}{voronoi-mesh/bunny-voronoi-03}&
+\image{geodesic-sampling}{0.32}{voronoi-mesh/bunny-voronoi-08}\\
+\image{geodesic-sampling}{0.32}{voronoi-mesh/elephant-50kv-voronoi-01}&
+\image{geodesic-sampling}{0.32}{voronoi-mesh/elephant-50kv-voronoi-03}&
+\image{geodesic-sampling}{0.32}{voronoi-mesh/elephant-50kv-voronoi-08}\\
+$N=5$ & $N=20$ & $N=50$ 
+}
+}{
+	Example of Voronoi segmentations $\voronoi(\startP)$ for an increasing number of seeding points.%
+}{fig-voronoi-mesh}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Double and Triple Points Extraction}
+
+During this propagation, one can keep track of the double points $w_{i,j}$ for each Delaunay edge $(x_i,x_j) \in \delaunay(\startP)$. Such a point corresponds to the first meeting location of the two fronts emanating from both $x_i$ and $x_j$. After the propagation is finished, the Delaunay edge curve $(x_i,x_j)$ is extracted by solving two gradient descents, equation \eqref{eq-geodesic-descent}, to compute the two geodesics joining $w_{i,j}$ to $x_i$ and $x_j$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Shape Skeletons Computation}
+
+For a 2D manifold, if $\startP$ is a smooth closed curve $c(t), t \in [0,1]$, then $\MedAxis(\startP)$ is a connected union of 1D curves. If $c(t)$ is the boundary of a 2D object, the medial axis is often referred to as the skeleton of the shape. 
+
+As proposed in~\cite{telea-skeletons}, it is possible to approximate the medial axis of a smooth curve $c(t)$ by processing the nearest neighbor index map $\ell(x)$, see also~\cite{hassouna-skeleton,uitert-skeleton}. In this setting, 
+\eq{
+	\startP = \{ x_i = c(i/K) \}_{i=0}^{K-1}
+} 
+is assumed to be a dense sampling of a smooth curve. The singularity points of the distance function $U_\startP$ are difficult to detect from the variation of $U_\startP$. These singularity are however located approximately at sharp transition of the index map $\ell(x)$.
+
+They can be detected by computing the magnitude map of the gradient $\norm{\nabla \ell(x)}$, that is computed numerically on the discrete grid by finite differences from $\{ \ell_i \}_i$. One should be careful about the fact that the derivative should be estimated using finite difference modulo $K$ where $K = |\startP|$ is the number of sampling points along the curve, so that $-K/2 \leq \nabla \ell(x) \leq K/2$. This is because $\ell(x) \in \{0,\ldots,K-1\}$ exhibit an artificial jump discontinuity when $\ell$ passes from $K-1$ to $0$. 
+
+The medial axis can then be approximate by thresholding the magnitude of the gradient
+\eq{
+	\MedAxis_\tau = \enscond{x \in \manif}{ \norm{\nabla \ell(x)} \geq \tau }.
+}
+Increasing the value of $\tau$ regularizes the medial axis.
+Figure \ref{fig-medial-axis} shows examples of such approximate medial axis for several values of $\tau$.
+
+\mic{quelle est la valeur min pour $\tau$ d'ailleurs ? c'est $1+\epsilon$ ?}
+
+\myfigure{ 
+\tabdeux{
+\image{fast-marching}{0.32}{medial-axis/chicken-mindist}&
+\image{fast-marching}{0.32}{medial-axis/chicken-assignement}\\
+Distance to boundary $U_\startP$ & 
+Assignement $\ell(x)$ \\
+\image{fast-marching}{0.32}{medial-axis/chicken-medial-1}&
+\image{fast-marching}{0.32}{medial-axis/chicken-medial-2}\\
+$\MedAxis_\tau$, $\tau=n/100$ & 
+$\tau=n/20$ 
+} 
+}{
+Computation of the approximated medial axis.%
+}{fig-medial-axis}
+
+%%
+\paragraph{Other methods to compute skeletons.}
+
+\if 0
+\gab{ Explain the method with maths equations.}
+    
+  Other algorithms allow a sub-pixelic precision. As was already explained
+  in section \ref{tubularstructure}, it is also possible to use
+  skeletization-like methods in order to center a path in a tubular
+  structure segmentation~\cite{Deschamps02fastextraction}. A similar
+  framework is used in~\cite{bb23752} in order to compute the entire
+  skeleton of a shape. They consider the skeleton as an union of
+  centerlines which meets at different types of \emph{topological
+    nodes}. The method relies on several steps.
+
+\begin{itemize}
+\item Compute a \emph{source point} as the farthest point from the boundary
+  of the shape using Fast-Marchings.
+\item Perform a front propagation from this point in the shape, and use it
+  to compute so-called topological nodes (i.e. extremal points and merging
+  points). 
+\item Use the~\cite{Deschamps02fastextraction} framework to compute paths
+  between the topological nodes and the source point.
+\end{itemize}
+
+\fi
+
+There exists a variety of alternative fast methods to computes skeletons and regularize their geometry for the Euclidean distance $\tensor{x} = \Id_2$. A subset of the edges of the voronoi diagram of a dense sampling of a curve was originally proposed in~\cite{ogniewicz-skeleton}. It can be shown to approximate the skeleton of the continuous curve. One can also use curves evolving according to PDEs similar to active contours~\cite{leymurie-active-skeleton,kimitannzuck-shock} or deformable sets of disks~\cite{zhu-forms}.
+
+There have also been several attemp to give alternate formulation for the skeleton that is more meaningful for shape recognition~\cite{zhu-medial} or to prune potentially noisy skeletons~\cite{sebastian-shock-graph}.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Geodesic Sampling}
+
+The Riemannian metric $\tensor{x}$ is used to control the quality of a sampling $\{x_i\}_{i \in I} \subset \manif$. Finding a sampling with high quality corresponds to finding a sampling whose density and anisotropy conform to the metric, and is useful in many applications, ranging to finite element simulations to computer graphics.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Riemannian Sampling Constraint}
+
+Loosely speaking, a sampling $\{x_i\}_{i \in I} \subset \manif$ conforms to the metric $\tensor{x}$ if all pairs of neighboring points $x_i,x_j$ roughly have the same geodesic distance $d(x_i,x_j)$.
+
+%%
+\paragraph{Covering and packing sampling constraints.}
+
+For a given sampling distance $\epsilon>0$, one looks for a sampling such that neighboring points all have the same distance $\epsilon$. The notion of neighbors is however difficult to define, and following~\cite{butler-packing}, one can replace it by looking at geodesic balls of radius $\epsilon$, already introduced in \label{eq-geod-ball}
+\eq{
+	B_{\epsilon}(x) \eqdef \enscond{y}{ d(x,y) \leq \epsilon}.
+}
+A sampling $\startP = \{x_i\}_{i \in I} \subset \manif$ is an $\epsilon$-covering, for some $\epsilon>0$ if
+\eql{\label{eq-condition-covering} 
+	\bigcup_{i \in I} B_{\epsilon}(x_i) = \manif,
+}
+which means that any point $x \in \manif$ is at a geodesic distance less than $\epsilon$ from $\startP$, or equivalently that $U_\startP \leq \epsilon$. Figure \ref{fig-epsilon-covering}, left, shows an example of $\epsilon$-covering.
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{0.32}{figures/epsilon-covering}&
+\image{geodesic-sampling}{0.32}{figures/epsilon-packing}&
+\image{geodesic-sampling}{0.32}{figures/epsilon-net}\\
+$\epsilon$-covering & $\epsilon$-packing & $\epsilon$-net.
+} 
+}{
+Comparison of the packing and covering properties for an Euclidean square (dashed lines). The light gray circle are Euclidean balls of radius $\epsilon$ while dark circle are balls of radius $\epsilon/2$.%
+}{fig-epsilon-covering}
+
+
+For such an $\epsilon$-sampling to be tight, one requires that it is an $\eta$-packing in the sense that
+\eql{\label{eq-condition-packing} 
+	\foralls i, j \in I, \quad 
+	i \neq j \qarrq d(x_i,x_j) \geq \eta
+}
+which means that balls of radius $\eta/2$ centered at points in $\startP$ do no overlap. Figure \ref{fig-epsilon-covering}, middle, an example of $\eta$-packing.
+
+An $\epsilon$-net is a sampling that is both an $\epsilon$-covering and an $\epsilon$-packing. Figure \ref{fig-epsilon-covering}, right, an example of $\epsilon$-net. Those sets are also called Delone sets in~\cite{clarkson-epsilon-nets}, and they can be shown to enjoy optimality property for the approximation of functions defined on $\manif$. Searching for $\epsilon$-covering that are $\eta$-packing for the largest $\eta$ corresponds to the problem of (geodesic) sphere packing, and is a deep mathematical problem even in Euclidean space~\cite{conway-packing}.
+
+An efficient $\epsilon$-net should contains the smallest number $N$  of points as possible. Finding a sampling that satisfies these conditions with the smallest $N$ is a difficult problem. A simple greedy procedure to approximate this problem, proposed originally in~\cite{gonzalez-clustering},  constructs iteratively an $\epsilon$-net $\{x_i\}_{i \in I}$. It starts by some random point $x_0 \in \manif$ and then iteratively add a new point at random that satisfies
+\eql{\label{eq-greedy-naive}
+	x_{k+1} \in \manif \backslash \bigcup_{i=0}^{k} B_{\epsilon}(x_i),
+}
+until condition \eqref{eq-condition-covering} is in force.
+
+Using a random choice in the greedy process \eqref{eq-greedy-naive} usually leads to a poor sampling quality so that $N$ can be quite large. Section \ref{subsec-farthest-sampling} details a non-random selection process that usually leads to a good solution.
+
+%%
+\paragraph{Delaunay sampling constraint.}
+
+A way to make more explicit the control of the sampling by the metric is to use the Delaunay graph \eqref{eq-delaunay-graph} as a notion of neighborhood. The sampling then conforms to the metric if 
+\eql{\label{eq-delaunay-constraint}
+	\foralls (i,j) \in \delaunay(\manif), \quad d(x_i,x_j) \approx \epsilon
+}	
+where $\epsilon$ is the sampling precision. 
+
+If the metric $\tensor{x}$ is a smooth function of $x$ and if $\epsilon$ is small enough, then $\tensor{x}\approx \tensor{x_i} $ in the neighborhood of $x$, so that condition \eqref{eq-delaunay-constraint} becomes
+\eql{\label{eq-sampling-constr-del-small}
+	\foralls (i,j) \in \delaunay(\manif), \quad \norm{x_i-x_j}_{\tensor{x_i}} \approx \epsilon	
+}
+
+%%
+\paragraph{Isotropic metric and density sampling.}
+
+In the case of an isotropic metric $\tensor{x} = W(x)^2 \Id_d$ in $\manif \subset \RR^d$, the sampling constraints becomes 
+\eq{
+	\foralls (i,j) \in \delaunay(\manif), \quad \norm{x_i-x_j} \approx \frac{\epsilon	}{W(x_i)},
+}
+Under this condition, in an Euclidean ball of radius $r>0$ centered at $x$, the number of samples should be proportional to $r^d W(x)^d$. The constraint thus corresponds to imposing that the sampling density is proportional to $W(x)^d$.
+In particular, regions of $\manif$ where $W$ is high are constrained to use a dense sampling. 
+
+One should note that this density sampling requirement does not correspond to drawing point at random according to the density $W(x) / \int_\manif W$, since one wishes to have neighbording points which conforms as much as possible to the metric, which random sampling usually does not achieves.
+
+In 1D, if $\manif = [0,1]$, the isotropic sampling problem is easily solved. A perfect conforming sampling conforming to the metric $W(x)$ is defined as
+\eql{\label{eq-sampling-1d}
+	x_i = F^{-1}(i/N) \qwhereq
+	F(x) = \frac{1}{ \int_0^1 W} \int_0^x W(y) \d y.
+}
+Obtaining a good density sampling for 2D and higher dimensional manifold is difficult. A simple greedy procedure is the error diffusion method~\cite{floyd-diffusion} and extensions~\cite{ostromoukhov-diffusion}, which is mainly used for digital halftoning~\cite{baqai-halftoning}. This method operated on an uniform grid, and scan in a given order to reduce the sampling problem to a 1D repartition problem, similarly to \eqref{eq-sampling-1d}.
+
+Other approaches, based on irrgular tilings offers better performance without periodic artifacts~\cite{ostromoukhov-polyominoes,ostromoukhov-penrose}.
+
+The following section details a greedy sampling procedure that produce good sampling in practice, and can take into account anisotropic Riemannian metrics.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Farthest Point Sampling}
+\label{subsec-farthest-sampling}
+
+The farthest point sampling algorithm is a simple greedy strategy able to produce quickly a good sampling that is an $\epsilon$-net. 
+Instead of performing a random choice in \eqref{eq-greedy-naive}, it selects the farthest points from the already selected point
+\eql{\label{eq-farthest-rule}
+	x_{k+1} = \uargmax{x \in \manif} \umin{0 \leq i \leq k} d(x_i,x).
+}
+This selection rule first appeared~\cite{gonzalez-clustering} as a clustering method, see also~\cite{dasgupta-clustering} for an analysis of clustering algorithms. This algorithm has been introduced in image processing to perform image approximation~\cite{eldar-farthest-point}. It is used in~\cite{peyre-geodesic-remeshing} together with geodesic Delaunay triangulation (to be defined in the next section) to do surface remeshing. The detection of saddle points (local maxima of the geodesic distance) is used in~\cite{cohen-contour-finding} to perform perceptual grouping. 
+
+\myfigure{ 
+\tabquatre{
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/name-metric}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/constant-sampling-001}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/constant-sampling-005}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/constant-sampling-020}\\
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/name-metric}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/mountain-sampling-001}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/mountain-sampling-005}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/mountain-sampling-020}\\
+Metric $W(x)$ & $N=1$ & $N=5$ & $N=20$
+} 
+}{
+Examples of farthest point sampling, the colormap indicates the distance function $U_\startP$.%
+}{fig-farthest-sampling}
+
+Figure \ref{fig-farthest-sampling} shows some iterations of this farthest point sampling method for isotropic metric on a square. One can see that this scheme seeds more points in areas where the metric $W$ is large. One can thus control the sampling density by modifying the metric $W$.
+ 
+Table \ref{fig-sampling-triangulation-anisotropic} gives the detail of the algorithm. 
+
+\algo{
+	\algstep{Initialization} set $x_0$ at random, $d_0(x) = d(x_0,x)$, $k=0$.\\
+	\Repeat{$\epsilon_{k} > \epsilon$}{
+		\algstep{Select point} $x_{k+1} = \uargmax{x} d(x)$, $\epsilon_{k+1} = d_k(x_{k+1})$.\\
+		\algstep{Update of the distance} $d_{k+1}(x) = \min(d_k(x),d(x_{k+1},x))$.\\
+		Set $k \leftarrow k+1$.
+	}	
+}{Farthest point sampling algorithm. }{listing-farthest-sampling}
+
+%%
+\paragraph{Numerical complexity.}
+
+Denoting 
+\eq{
+	d_k = \umin{0 \leq i \leq k} d(x_i,x) = U_{ \{x_0,\ldots,x_k\}}(x),
+}
+the selection rule \eqref{eq-farthest-rule} reads
+\eq{
+	x_{k+1} = \uargmax{x \in \manif} d_k(x),
+}
+while $d_{k+1}$ is computed from $d_k$ as
+\eq{
+	d_{k+1}(x) = \min(d_k(x), d(x_{k+1},x)).
+}
+This update of the distance map is performed efficiently by a single Fast Marching propagation, starting from $x_{k+1}$, and restricted to the Vornoi region of $x_{k+1}$
+\eq{
+	\Cc_{k+1} = \enscond{x \in \manif}{ \foralls i\leq k, \;  d(x_{k+1},x) \leq d_k(x) }.
+}
+
+If the manifold is discretized with $N_0$ points and if the metric $\tensor{x}$ does not varies too much, the size of $\Cc_{k+1}$ is roughly $O(N_0/k)$, so that the complexity of each sampling step is $O(N_0/k\log(N_0))$, and the overall complexity of sampling $N \ll N_0$ points is roughly $O( N_0 \log(N_0) \log(N) )$.
+
+%%
+\paragraph{Farthest sampling quality.}
+
+The farthest point sampling $\{x_0,\ldots,x_{N-1}\}$ is an $\epsilon$-net for
+\eql{
+	\epsilon = \umax{0 \leq i < N}  \umin{0 \leq j < N}  d(x_i,x_j).
+}
+Note however that there is no simple control on the actual number of samples $N$ required to achieve a given accuracy $\epsilon$. We refer to~\cite{clarkson-epsilon-nets} for an in-depth study of the approximation power of this greedy sampling scheme.
+
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Farthest Point Meshing}
+\label{subsec-fp-meshing}
+
+Having computed a sampling $\{x_i\}_{i\in I} \subset \manif$, one can define a triangulation of the manifold $\manif$ using the geodesic Delaunay faces $\delaunayF(\startP)$ defined in \eqref{eq-dfn-del-faces}.
+One can connect the samples using the geodesic curve realization \eqref{eq-geometric-rea-delaunay} or using the straight line realization \eqref{eq-geometric-rea-delaunay-eucl} is the manifold is embedded in Euclidean space.
+
+
+\myfigure{ 
+\tabquatre{
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/name-metric}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/constant-sampling-100}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/constant-voronoi-100}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/constant/constant-triangulation-100} \\
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/name-metric}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/mountain-sampling-100}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/mountain-voronoi-100}&
+\image{geodesic-sampling}{0.24}{farthest-sampling/mountain/mountain-triangulation-100}\\
+Metric $W(x)$ & Sampling $\startP$ & Voronoi $\voronoi(\startP)$ & Delaunay $\delaunay(\startP)$
+}
+}{
+Examples of sampling and triangulations with an isotropic metric $\tensor{x} = W(x)^2 \Id_2$. The sampling is denser in the regions where the metric is small (dark). %
+}{fig-sampling-voronoi-delaunay}
+
+If the sampling is dense enough, this produce a valid triangulation, that can be used to mesh a continuous domain or re-mesh a densely sampled manifold as explained in~\cite{peyre-geodesic-remeshing}. Figure \ref{fig-sampling-voronoi-delaunay} shows the process of computing the sampling, the Vornoi region, and the Delaunay triangulation.
+
+%%
+\paragraph{Isotropic image meshing.}
+
+Figure \ref{fig-triangulation-refinement-iso} shows triangulations obtained for several isotropic metric. It shows how the triangulation is refined as the farthest point algorithm insert new samples.
+
+\myfigure{ 
+\tabquatre{
+\image{geodesic-sampling}{0.24}{farthest-triangulation/bump-1}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/bump-2}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/bump-3}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/bump-5}\\
+\image{geodesic-sampling}{0.24}{farthest-triangulation/split-1}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/split-2}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/split-3}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/split-5}\\
+\image{geodesic-sampling}{0.24}{farthest-triangulation/square-1}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/square-2}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/square-3}&
+\image{geodesic-sampling}{0.24}{farthest-triangulation/square-5}\\
+$N=10$ & $N=20$ & $N=30$ & $N=300$
+}
+}{
+Examples of farthest point meshing for an isotropic metric $W(x)$ (shown in background). %
+}{fig-triangulation-refinement-iso}
+
+
+Section \ref{subsection-aniso-image} discusses the extension of this image meshing method to anisotropic metric, with application to image approximation. Section \ref{sec-domain-meshing} explains how to deal with complicated boundaries in order to perform domain meshing.
+
+%%
+\paragraph{Suface re-meshing.}
+
+The farthest point sampling algorithm can be used on a surface represented by a discrete 3D mesh that is densely sampled. The method thus performs a sub-sampling followed by a geodesic remeshing of the original triangulated surface.
+
+Figure \ref{fig-geodesic-remeshing} shows an example of uniform remeshing of a surface $\surf \in \RR^3$ acquired from medical imaging with an increasing number of points, with a constant metric $W(\tilde x)=1$ for $\tilde x \in \surf$.   
+
+\myfigure{ 
+\tabdeux{
+\image{geodesic-sampling}{0.45}{meshing-pelvis/pelvis-sampling-1000}& 
+\image{geodesic-sampling}{0.45}{meshing-pelvis/pelvis-remeshing-1000}\\
+$N=1000$ samples & Triangulation \\
+\image{geodesic-sampling}{0.45}{meshing-pelvis/pelvis-sampling-5000}&
+\image{geodesic-sampling}{0.45}{meshing-pelvis/pelvis-remeshing-10000}\\
+$N=10000$ samples & Triangulation
+}
+}{
+Geodesic remeshing with an increasing number of points.%
+}{fig-geodesic-remeshing}
+
+Figure \ref{fig-david} shows an example of uniform remeshing of the David surface, where the original input surface was obtained by range scanning~\cite{michelangelo-stanford}.
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{.24}{meshing-david/david-original}&
+\image{geodesic-sampling}{.22}{meshing-david/david-remeshed}&
+\image{geodesic-sampling}{.28}{meshing-david/david-remeshed-zoom}\\
+Original, $10^6$ vertices & Remeshed, $10^4$ vertices & Zoom
+}
+}{
+Uniform remeshing of the David 3D surface.%
+}{fig-david}
+
+
+Following Section \ref{subsec-metric-3d-meshes}, one can define a varying density $W(\tilde x)$ on the surface, to obtain an adaptive isotropic remeshing of the surface.  Figure \ref{fig-remeshing-density} shows how a varying metric (bottom row) metric $W(\tilde x)$ is able to modify the sampling.
+
+
+\myfigure{ 
+\tabdeux{
+\image{geodesic-sampling}{0.4}{meshing-surfaces/bunny-cst-remesh-300} &
+\image{geodesic-sampling}{0.4}{meshing-surfaces/bunny-cst-remesh-1400} \\
+\image{geodesic-sampling}{0.4}{meshing-surfaces/bunny-grad-remesh-300} &
+\image{geodesic-sampling}{0.4}{meshing-surfaces/bunny-grad-remesh-1400} \\
+$N=300$ & $N=1400$ 
+}
+}{
+Adaptive remeshing with a constant density (left) and a linearly increasing density.
+}{fig-remeshing-density}
+
+
+This weight $W(\tilde x)$ that modulate the metric of the 3D surface can be computed using a texture map. 
+One can use a gradient-based metric as defined in \ref{eq-gradient-based-metric}, in order to put more sample in region of large variation in the texture, see also Figure \ref{fig-earth-texture}. Figure \ref{fig-remeshing-density-texture} shows application of this idea to the adaptive remeshing of 3D faces.
+
+
+\myfigure{ 
+\tabdeux{
+\image{geodesic-sampling}{.32}{meshing-texture/meshing-texture-image}&
+\image{geodesic-sampling}{.32}{meshing-texture/meshing-texture-metric}\\
+Texture $f(\tilde x)$ & Metric $W(\tilde x)$
+}\\
+\tabtrois{
+\image{geodesic-sampling}{.32}{meshing-texture/meshing-texture-1}&
+\image{geodesic-sampling}{.32}{meshing-texture/meshing-texture-2}&
+\image{geodesic-sampling}{.32}{meshing-texture/meshing-texture-3}\\
+$\rho(W)=1$ & $\rho(W)=3$ & $\rho(W)=10$
+}
+}{
+Adaptive remeshing with a density given by a texture.
+The adaptivity ratio $\rho(W) = \max W/\min W$ is increasing from left to right.%
+}{fig-remeshing-density-texture}
+
+To improve the approximation quality of the original surface $\surf$ by the triangulation obtained by geodesic remeshing, it is possible to build a metric that takes into account the curvature.
+One can for instance use the second fundamental form $J$ defined in \eqref{eq-second-fund-form} and use the square root of this matrix $\tensor{\tilde x} = \sqrt{|J_{\tilde x}|}$, that corresponds to an anisotropic metric defined on the tangent plane of the surface.  This anisotropic metric can be shown to be an optimal metric for the approximation of smooth surfaces that are the boundary of a convex volume~\cite{clarkson-epsilon-nets,gruber-optimal-quantization,gruber-asympt-approx}.
+
+It is also possible to use simpler isotropic weight $W(\tilde x)$ on the surface that depends for instance on the total curvature trace$(|J_{\tilde x}|)$ as defined in \eqref{eq-metric-curv}, see ~\cite{peyre-geodesic-remeshing}.
+Figure \ref{fig-curvature-remeshing} show such an example of cuvature-adapted remeshing, that improve the reconstruction of sharp feature, because more points are allocated in region of high curvature.
+
+% An option to compute this metric is to use a texture mapped on the surface. Starting from some parametric surface: $\phi : U \subset [0,1]^2 \rightarrow \manif$, a texture $T$ is a mapping $T : [0,1]^2 \rightarrow \RR$. It allows to define an isotropic metric using for instance an edge adaptive function
+% \eq{ 	\foralls x \in U, \; H(x) = \psi_T(x) \Id_2. }
+% where the edge-based stopping function is $\psi_T(x) = (\norm{\nabla_x T}+\epsilon)^{-1}$. Figure \ref{fig-remeshing-density-texture} shows examples of remeshing with a texture-adapted metric with a decreasing value of $\epsilon$ (increasing adaptivity).
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{.32}{meshing-curvature/cube-original}&
+\image{geodesic-sampling}{.32}{meshing-curvature/cube-constant}&
+\image{geodesic-sampling}{.32}{meshing-curvature/cube-curv}\\
+\image{geodesic-sampling}{.32}{meshing-curvature/fandisk-original}&
+\image{geodesic-sampling}{.32}{meshing-curvature/fandisk-constant}&
+\image{geodesic-sampling}{.32}{meshing-curvature/fandisk-curv}\\
+Surface $\surf$ & $W=1$ & Curvature $W(\tilde x)$
+}
+}{
+Geodesic remeshing for a constant metric (middle) and curvature-driven metric as defined in \eqref{eq-metric-curv}.%
+}{fig-curvature-remeshing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Anisotropic Image Triangulation}
+\label{subsection-aniso-image}
+
+
+In this section, we consider the case of a 2D manifold parameterized on a square so that $\manif = [0,1]^2$. The goal is to use the Riemannian structure to perform image sampling and triangulation.
+
+Instead of using a constant or an isotropic metric $\tensor{x} = W(x) \Id_2$, one can use a fully anisotropic metric $\tensor{x} \in \RR^{2 \times 2}$. To design a metric to sample an image $f(x)$, the eigenvectors $e_1(x)$ defined in \eqref{eq-tensor-eigen} should match the direction of edge and texture in the image, while the anisotropy $A(x)$, defined in \ref{eq-anisotropy-energy}, should match the anisotropic regularity of $f$ near $x$.
+
+% Figure \ref{fig-anisotropic-mesh} shows an example of meshing with a metric of decreasing anisotropy. Figure \ref{fig-anisotropic-meshing-incremental} shows an anisotropic farthest point meshing with an increasing number of sampling points.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Image Approximation with Triangulations}
+
+Adaptive image approximation is performed by computing a triangulation of the image and using a piecewise linear finite elements approximation. This class of methods originates from the discretization of partial differential equations, where the design of the elements should match the regularity one expects for the solutions, which might contain shocks or boundary layers. Iterative adaptation allows to refine both the solution of the equation and the shape of the elements~\cite{aguilar-anisotropic-mesh-refinement,rippa-long-thin,shewchuk-what-is}.
+
+The position of the samples $\startP = \{x_0,\ldots,x_{N-1}\}$ and the connectivity of the triangulation $\delaunayF$ should be adapted to the features of the image. Note that in general, $\delaunayF$ is not necessary an Euclidean or geodesic Delaunay triangulation $\delaunayF(\startP)$ of $\startP$.
+
+A piecewise affine function $f_N$ on the triangulation is defined as
+\eq{
+	f_N  = \sum_{i \in I} a_i \phi_i
+}
+where $\phi_i$ is the hat spline function, that is affine on each triangle and such that $\phi_i(x_j)=0$ is $i \neq j$ and $\phi_i(x_i)=1$. 
+
+The efficiency of the approximation $f_N$ is measured using the $L^p$ norm on the domain, for $1 \leq p \leq +\infty$
+\eq{
+	\norm{ f-f_N }_{L^p(\manif)}^p = \int_\manif |f(x)-f_N(x)|^p \d x
+}
+and
+\eq{
+	\norm{ f-f_N}_{L^\infty(\manif)} = \umax{x \in \manif} |f(x)-f_N(x)|.
+}
+It is possible to use an interpolation of the original image by defining $a_i = f(x_i)$. If one measures the approximation error using the $L^2$ norm, a better approximation is obtained by an orthogonal projection 
+\begin{equation}\label{eq-spline}
+	f_N  = \sum_{i \in I} a_i \phi_i
+	\qwhereq
+	a = \uargmin{\tilde a \in \RR^N} \norm{f - \sum_i\tilde a_i \phi_i}^2.
+\end{equation}
+The coefficients $a$ of this approximation $f_N$ is computed by solving a sparse linear system
+\eq{
+	\foralls i \in I, \quad \sum_j \dotp{\phi_i}{\phi_j} a_j = \dotp{f}{\phi_i}.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Greedy Schemes}
+
+Given a fixed number $N$ of vertices, the goal is to design a triangulation so that the approximation error $\norm{f-f_N}_{L^p(\manif)}$ is as low as possible. Such an efficient triangulation is likely to be also efficient to applications to image compression and denoising, because it captures well the geometry of the image. 
+
+Computing this optimal triangulation is in some sense NP-hard~\cite{agarwal-triangulation-np}, and one thus needs to rely on sub-obtimal greedy schemes. These schemes generate a sequence of triangulations by either refinement (increasing $N$) or coarsening (decreasing $N$, starting from a dense sampling).
+
+%%
+\paragraph{Refinement schemes.}
+
+A greedy refinement scheme starts by a simple fixed triangulation $(\delaunayF_0,\startP_0)$ of the squares $[0,1]^2$, and iteratively adds one or several vertices to $\startP_j$ to obtain a triangulation $(\delaunayF_{j+1},\startP_{j+1})$ that minimizes the approximation error. 
+
+Delaunay refinement introduced by Ruppert~\cite{ruppert-delaunay-refinement} and Chew~\cite{chew-refinement}, proceeds by inserting a single point, that is imposed to be a circumcenter of one triangle, and also impose that $\delaunayF_j = \delaunayF(\startP_j)$ is a Delaunay triangulation of $\startP_j$. This constraint limits the domain of the optimization and thus accelerate the search, and also leads to triangles with provably good isotropic aspect ratio, which might be useful to compute the approximation of the solution of an elliptic PDE on the mesh grid. For image approximation, one however needs to design aniosotropic triangulations, which requires to modify the notion of circumcenter. 
+using an anisotropic metric~\cite{georges-mesh-generation}. Other refinement schemes are possible, such as for instance edge bisection~\cite{mirebeau-greedy}, that reach the optimal asymptotic error decay for smooth convex functions.
+%%
+\paragraph{Coarsening schemes.}
+
+Triangulation coarsening algorithms start with a fine scale triangulation $(\delaunayF_J,\startP_J)$ of $[0,1]^2$ and progressively remove either a vertex, an edge or a face to increase as slowly as possible the approximation error until $N$ vertices remain~\cite{dyn-data-triangulation,hoppe-pm,garland-simplification}. One can for instance remove a single vertex to go from $\startP_{j+1}$ to $\startP_j$, and impose that $\delaunayF_j = \delaunayF(\startP_j)$ is the Delaunay triangulation of $\startP_j$. This can be shown experimentally to produce highly anisotropic meshes, which can be used to perform compression, see Demaret et al.~\cite{demaret-spline}.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hessian Tensor Metric}
+\label{subsection-hessian-tensor}
+
+In this section, we consider a uniformly smooth $C^2$ image defined on $\manif$. We show how to design locally a metric $\tensor{x}$ so that if the triangulation conforms to this metric, $\norm{ f-f_N }_{L^p(\manif)}$ is as small as possible.
+
+%%
+\paragraph{Local error optimization.}
+
+Near a point $x \in \manif$, the approximation error of $f$ by an affine function is governed by the Hessian matrix $H_f$ of second derivatives 
+\eq{
+	H_f(x) = \pa{ \frac{\partial^2 f}{\partial x_i \partial x_j}(x) }_{0 \leq i,j \leq 1}.
+}
+One can diagonalize this symmetric matrix field as follow
+\eql{
+	H_f(x) = \la_1(x) e_1(x) \transp{e_1(x)} + \la_1(x) e_1(x) \transp{e_1(x)},
+}
+where $(e_1,e_2)$ are the orthogonal eigenvectors fields and $|\la_1|>|\la_2|$ are the eigenvalues fields. 
+
+In the following, we suppose that $H_f$ does not varies to much so that is can be considered as constant inside each triangle $T \in \delaunayF$. This heuristic can be made rigorous, see for instance~\cite{mirebeau-greedy}.
+
+Performing a Taylor expansion of $f$ near a vertex $x_k \in T$ for a triangle $T \in \delaunayF$ of the triangulation, one obtains
+\eqm{\label{eq-taylor-triangle}
+	&|f(x) - f_N(x)| \leq C |\la_1(x_k)| |\dotp{x-x_k}{e_1(x_k)}|^2 \\
+	&\quad  + C |\la_2(x_k)| |\dotp{x-x_k}{e_2(x_k)}|^2  .
+}
+
+%%
+\paragraph{Uniform triangulation.}
+
+For a uniform triangulation, where all the triangles are approximately equilateral with the same size, one has 
+\eq{
+	\De_1(T) \approx \De_2(T) \approx N^{-1/2},
+}
+so that the approximation error in \eqref{eq-taylor-triangle} leads to
+\eql{\label{eq-approximation-decay-constant}
+	\norm{f-f_N}_{L^p(\manif)} \leq C \norm{H_f}_{L^p(\manif)} N^{-1}
+}
+where the $L^p$ norm of the Hessian field is
+\eq{
+	\norm{H_f}_{L^q(\manif)}^p = \int_\manif |\la_1(x)|^p \d x.
+}
+
+%%
+\paragraph{Isotropic triangulation.}
+
+An isotropic triangulation makes use of triangles that are approximately equilateral, so that $\De_1(x) \approx \De_2(x)$, and the error \eqref{eq-taylor-triangle} leads on each triangle $T \in \delaunayF$ to
+\eq{
+	\norm{f-f_N}_{L^p(T)} \leq C \norm{H_f}_{L^q(T)}
+	\qwhereq
+	\frac{1}{q} = 1 + \frac{1}{p}.
+}
+In order to reduce as much as possible the approximation error $\norm{f-f_N}_{L^p(\manif)}$ on the whole domain, an heuristic is to equidistribute the approximation error on all the triangle. This heuristic can be shown to be nearly optimal, see~\cite{mirebeau-greedy}. This criterion requires that for $x_k \in T \in \delaunayF$, 
+\eql{\label{eq-isotropic-equidistrib}
+	\norm{H_f}_{L^q(T)} \approx |T|^{1/q} |\la_1(x_k)| \approx \De_1(T)^{2/q} |\la_1(x_k)|
+}
+is approximately constant, where $|T| $ is the area of the triangle. This means that the triangle $T$ located near $x_k$ should have approximately constant edge size, for the isotropic Riemannian metric $\tensor{x_k}$ defined as
+\eql{\label{eq-iso-metric-conforming}
+	\tensor{x} = W(x)^2 \Id_2 \qwhereq
+	W(x)^2 = |\la_1(x)|^q.
+}
+For instance, if one measure the approximation error using the $L^\infty$ norm, then $W(x)^2 = |\la_1(x)| = \norm{H_f(x)}$.
+
+An adaptive isotropic triangulation conforming to the metric \eqref{eq-iso-metric-conforming} gives rise to an approximation error
+\eql{\label{eq-approximation-decay-isotropic}
+	\norm{f-f_N}_{L^p(T)} \leq C \norm{H_f}_{L^q(T)} N^{-1}
+	\qwhereq
+	\frac{1}{q} = 1 + \frac{1}{p}.	
+}
+Since $q < p$, note that the constant appearing in the isotropic approximation \eqref{eq-approximation-decay-isotropic} is much smaller than the constant in the constant size approximation \eqref{eq-approximation-decay-constant}.
+
+%%
+\paragraph{Anisotropic triangulation.}
+
+As detailed by Babu{\v{s}}ka and A. K. Aziz~\cite{babuska-angle-condition}, for a smooth function, one should use anisotropic triangles whose aspect ratio matches the anisotropy of the image. 
+To reduce as much as possible the error in the pointwise error \eqref{eq-taylor-triangle}, the error along each axis $e_1,e_2$ should be approximately equal, so that the anisotropy of the triangles should satisfy
+\eql{\label{eq-anisotropic-cond-1}
+	\frac{\De_1(x)}{\De_2(x)} = \sqrt{ \frac{|\la_2(x)|}{|\la_1(x)|} }.
+}
+Under this anisotropy condition, the error \eqref{eq-taylor-triangle} leads on each triangle $T \in \manif$ to
+\eq{
+	\norm{f-f_N}_{L^p(T)} \leq C \norm{\sqrt{|\det(H_f)|}}_{L^q(T)}
+	\qwhereq
+	\frac{1}{q} = 1 + \frac{1}{p},
+}
+see~\cite{mirebeau-greedy}.
+Similarly to the isotropic case \eqref{eq-isotropic-equidistrib}, the equidistribution of error criterion leads to
+\eqml{\label{eq-anisotropic-cond-2}
+	\norm{\sqrt{|\det(H_f)|}}_{L^q(T)} &\approx |T|^{1/q} \sqrt{|\la_1(x_k) \la_2(x_k)|}  \\
+		&\approx (\De_1(T)\De_2(T))^{1/q} \sqrt{|\la_1(x_k) \la_2(x_k)|} 
+}
+being approximately constant.
+
+Conditions \eqref{eq-anisotropic-cond-1} and \eqref{eq-anisotropic-cond-2} show that a triangle of an optimal triangulation for the $L^p$ norm should have its edges of equal length when measured using the following Riemannian metric
+\eql{\label{eq-aniso-metric-conforming}
+	\tensor{x} = |\det(H_f(x))|^{\frac{q-1}{2}} |H_f(x)|
+}
+where the absolute value of the hessian is	
+\eq{	
+	|H_f(x)| = 
+	|\la_1(x)| e_1(x) \transp{e_1(x)} + 
+	|\la_2(x)| e_2(x) \transp{e_2(x)}.
+}
+For instance, when using the $L^\infty$ norm, the metric is $\tensor{x} = |H_f(x)|$.
+
+An adaptive anisotropic triangulation conforming to the metric \eqref{eq-aniso-metric-conforming} gives rise to an approximation error
+\eql{\label{eq-approximation-decay-anisotropic}
+	\norm{f-f_N}_{L^p(T)} \leq C \norm{\sqrt{|\det(H_f)|}}_{L^q(T)} N^{-1}
+	\qwhereq
+	\frac{1}{q} = 1 + \frac{1}{p}.	
+}
+Note that the constant appearing in the anisotropic approximation \eqref{eq-approximation-decay-anisotropic} is much smaller than the constant in the isotropic approximation \eqref{eq-approximation-decay-isotropic}.
+
+%%
+\paragraph{Farthest point hessian triangulation.}
+
+Equations \eqref{eq-approximation-decay-isotropic} and \eqref{eq-approximation-decay-anisotropic} give respectively the optimal isotropic and ansiotropic Riemnnian metric that should be used to design triangulations to approximate smooth functions. One can thus use the farthest point meshing algorithm detailed in Section \ref{subsec-fp-meshing} to compute an $\epsilon$-net that conform to this metric.
+
+\gab{Show here an example of approximation with constant / isotropic / anisotropic. }
+
+Figure \ref{} shows a comparison of the constant, isotropic and anisotropic metric for the $L^2$ norm, so that $p=2$ and $q=3/2$. One clearly sees the improvement brought by adaptivity and anisotropy. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Structure Tensor Metric}
+\label{subsection-structure-tensor}
+
+The optimal Hessian-based metrics \eqref{eq-approximation-decay-isotropic} and \eqref{eq-aniso-metric-conforming} are restricted to the approximation of smooth images. Furthermore, these metrics are quite unstable since second order derivatives are difficult to estimate on a noisy image. 
+
+An alternative is to build a robust estimation of both edge and texture direction from first order derivative using the so-called structure tensor. There is no optimality results for approximation using such first order metric, but they shows good results in practice.
+
+%%
+\paragraph{Structure tensor.}
+
+The local orientation of a feature around a pixel $x$ is given by the vector orthogonal to the gradient $v(x) = (\nabla f(x))^{\bot}$, which is computed numerically with finite differences. This local direction information can be stored in a rank-1 tensor $\tilde T(x) = v(x)\transp{v(x)}$. In order to evaluate the local anisotropy of the image, one needs to average this tensor 
+\eql{\label{eq-structure-tensor} 
+		T(x) = \tilde T \star G_{\si}(x) 
+}
+where the 4 entries of the tensor are smoothed against a gaussian kernel $G_\sigma$ of width $\sigma>0$. The metric $T$ corresponds to the so-called structure tensor, see for instance~\cite{kothe-edge-junction}.
+This local tensor $T$ is able to extract both the local direction of edges and the local direction of textural patterns.  Another option, that we do not pursue here, is to use the square of the Hessian matrix of $f$ instead of the structure tensor.
+%  (see figure \ref{fig-anisotropic-distances}, left)
+
+At each pixel location $x$, the structure tensor field can be diagonalized in an orthogonal basis $(e_1,e_2)$
+\eql{
+	T(x) = \mu_1(x) e_1(x) \transp{e_1(x)} + \mu_2(x) e_2(x) \transp{e_2(x)}.
+}
+In order to turn the structure tensor into a Riemannian metric, one can apply a non-linear mapping to the eigenvalues, 
+\eql{\label{eq-tensor-eigmap} 
+	\tensor{x} = \psi_1(\mu_1(x)) e_1(x) \transp{e_2(x)} + \psi_2(\mu_2(x)) e_2(x) \transp{e_2(x)}.
+}
+where $\psi_i$ are decreasing functions, for instance $\psi_i(a) = (\epsilon+a)^{-1}$ for a small value of $\epsilon$.
+
+%%
+\paragraph{Farthest point approximation.}
+
+
+% \myfigure{  \image{geodesic-sampling}{1}{meshing-images/anisotropic-meshing} }{
+% Anisotropic meshing of a square with an increasing number of points. }{fig-anisotropic-meshing-incremental}
+
+\myfigure{ 
+\tabquatre{
+\image{riemannian-manifolds}{0.24}{anisotropic-propagation/varying-2d-propagation-3}&
+\image{riemannian-manifolds}{0.24}{anisotropic-propagation/varying-2d-propagation-5}&
+%\image{riemannian-manifolds}{0.24}{anisotropic-propagation/varying-2d-propagation-7}&
+\image{riemannian-manifolds}{0.24}{anisotropic-propagation/varying-2d-propagation-9}&
+\image{riemannian-manifolds}{0.24}{anisotropic-propagation/varying-2d-propagation-14}
+}
+}{
+Examples of anisotropic front propagation (from 9 starting points). The colormap indicates the values of the distance functions at a given iteration of the algorithm. The metric is computed using the structure tensor, equation \eqref{eq-structure-tensor}, of the texture $f$ shown in the background. %
+}{fig-front-anisotropic}
+
+Figure \ref{fig-front-anisotropic} shows an example of Fast Marching propagation using an anisotropic metric $\tensor{x}$. The front propagates faster in the direction of the main eigenvector field $e_1(x)$. Figure \ref{fig-anisotropic-distances} shows distance map for a tensor field $\tensor{x}$ whose anisotropy $A(x)=A$ is progressively decreased using well chosen mapping functions $(\psi_1,\psi_2)$, so that the geodesic distance becomes progressively isotropic and Euclidean.
+
+%%
+\paragraph{Anisotropic geodesic meshing for image compression.}
+
+Figure \ref{fig-compression-triangulation} shows an example of adaptive triangulation produced by the greedy anisotropic refinement scheme of~\cite{peyre-triangulation-iccv}. 
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{.32}{images-triangulations/triangle-triangulation}&
+\image{geodesic-sampling}{.32}{images-triangulations/triangle-geod}&
+\image{geodesic-sampling}{.32}{images-triangulations/triangle-wav}\\
+ & Geodesic & JPEG-2000 \\
+\image{geodesic-sampling}{.32}{images-triangulations/peppers-triangulation}&
+\image{geodesic-sampling}{.32}{images-triangulations/peppers-geod}&
+\image{geodesic-sampling}{.32}{images-triangulations/peppers-wav}\\
+ & Geodesic & JPEG-2000 \\
+}
+}{
+Comparison of the adapted triangulation scheme~\cite{peyre-triangulation-iccv} with JPEG-2000, for the same number of bits, for $N = 200$ (top) 
+and $N = 600$ (bottom) triangles.%
+}{fig-compression-triangulation}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Domain Meshing}
+\label{sec-domain-meshing}
+
+This section considers the meshing of a manifold with boundaries, which has important applications for numerical simulations with finite elements. We restrict ourselves to 2D manifolds with boundaries. Extension to higher dimensional manifolds makes use of the same line of ideas, but it is significantly more difficult to maintain mesh elements with good quality.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Constrained Delaunay Triangulation}
+
+For now we have considered either Riemannian manifolds without boundaries, or did not care about the reconstruction of the boundary. However in some applications such as numerical simulation of PDEs, it is important that the meshing conforms to the boundary of the domain. In particular, the boundary of the discrete mesh should precisely approximate the boundary of the continuous manifold.
+
+%%
+\paragraph{Manifold with boundary.}
+
+
+In the following, we denote $i \leftrightarrow j$ to indicate that $x_i,x_j \in \startP \cap \partial\manif$ are consecutive along the boundary (no other points $x_k \in \partial \manif$ is between them).
+
+\newcommand{\boundvert}{\Xi}
+\newcommand{\boundlink}{\leftrightarrow}
+
+To simplify the notations, we treat the outside of the shape as a Voronoi cell $\manif^c = \Cc_{\boundvert}$ associated to a virtual vertex $x_{\boundvert}$, and consider the set of indices $I = \{\boundvert,0,\ldots,N-1\}$. This allows us to extend the notion of triple points \eqref{eq-dfn-triple-points} and Delaunay faces \eqref{eq-dfn-del-faces}.
+This extensions thus creates virtual exterior faces  $(\boundvert,i,j) \in \delaunayF(\startP)$ which  indicates that two Voronoi cells $\Cc_i$ and $\Cc_j$ intersect at the boundary of the manifold. The associated triple point $x_{\boundvert,i,j}$ thus lies along the boundary. 
+
+%% 
+\paragraph{Constrained triangulation.}
+
+To mesh correctly the boundary $\partial \manif$ of the manifold, we require that it is part of the Delaunay graph $\delaunay(\startP)$, which means that
+\eq{
+	\foralls i \boundlink j, \quad (i,j) \in \delaunay(\startP).
+}
+This corresponds to a Delaunay triangulation constrained by the connexions defined by the boundary.
+Figure \ref{fig-encroaching-vertex}, left, shows a valid situation where $i \boundlink j$ is part of the Delaunay graph.
+
+\myfigure{ 
+\image{geodesic-sampling}{.45}{figures/encroaching-vertex-1}\hspace{2mm}
+\image{geodesic-sampling}{.45}{figures/encroaching-vertex-2}
+}{
+Left: the vertex $x_k$ does not encroach the boundary curve $i \boundlink j$ because $(x_i,x_j)$ is a Delaunay edge. 
+Right: the vertex $x_k$ encroaches the boundary curve $i \boundlink j$.%
+}{fig-encroaching-vertex}
+
+This requirement is quite strong, since it might happens for an arbitrary geodesic Delaunay triangulation that a third point $x_k \in \startP$ encroaches the edge $i \boundlink j$, which means that
+\eq{
+	(\boundvert,i,k) \in \delaunayF(\startP)
+	\quad\text{or}\quad
+	(\boundvert,j,k) \in \delaunayF(\startP).
+}
+This configuration is shown on Figure \ref{fig-encroaching-vertex}, right.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Farthest Point Refinement}
+\label{subsec-fp-meshing-domain}
+
+It is possible to use the farthest point sampling algorithm, Table \ref{listing-farthest-sampling}, to mesh a manifold with boundary. Some care should be made during the algorithm so that the boundary of the domain is included in the delaunay triangulation.
+
+%%
+\paragraph{Encroaching vertex fixing.}
+
+I might happens that a newly inserted farthest points $x_k$ encroaches a boundary Delaunay edge $i \boundlink j$. In this case, is it necessary to add to $\startP$ a new boundary vertex $\tilde x_{i,j} \in \partial\Om$ between $x_i$ and $x_j$, that is selected as the same geodesic distance from the two boundary point
+\eql{\label{eq-dfn-boun-midpoint}
+	\tilde x_{i,j} \in \partial \manif
+	\qwhereq 
+	d(x_i,\tilde x_{i,j}) = d(x_j,\tilde x_{i,j}).
+}
+Note that $\tilde x_{i,j}$ is not necessary equal to the double point $x_{i,j}$ defined in \eqref{eq-dfn-double-point}, since a double point is not constrained to lie on the boundary.
+
+%%
+\paragraph{Isolated vertex fixing.}
+
+As already noticed in Section \ref{subsec-delaunay-triangl}, the Delaunay graph might not be a valid triangulation of the manifold. This is the case when a vertex $x_i$ such that $(i,j) \in \delaunay(\startP)$ is isolated, which means that it is not part of the triangulation
+\eq{
+	\foralls k, \quad (i,j,k) \notin \delaunayF(\startP).
+}
+In this case, it is necessary to add a new vertex $\bar x_{i,j} \in \manif$ located on the Voronoi boundary between $x_i$ and $x_j$, such as for instance 
+\eql{\label{eq-dfn-isolation-fixing}
+	\bar x_{i,j} = \uargmax{x \in C_i\cap C_j}d(x_i,x),
+}
+although other choices are possible.
+
+%%
+\paragraph{Farthest point meshing examples.}
+
+Figure \ref{fig-shape-meshing}, left, shows an example of uniform domain meshing using a constant metric $\tensor{x}=\Id_2$ together with this modified farthest point method. Figure \ref{fig-shape-meshing}, right, makes use of an isotropic metric $\tensor{x}=W(x)^2 \Id_2$ where $W(x) = (\epsilon+d(x,\partial \manif))^{-1}$ that tends to seed more points on the boundary of the shape $\manif$. 
+
+\myfigure{ 
+\tabdeux{
+\image{geodesic-sampling}{0.38}{meshing-shapes/mm-mesh-400}&
+%\image{geodesic-sampling}{0.35}{meshing-shapes/mm-mesh-1000}\\
+\image{geodesic-sampling}{0.38}{meshing-shapes/mm-mesh-400-adaptive}\\
+%\image{geodesic-sampling}{0.35}{meshing-shapes/mm-mesh-1000-adaptive} \\
+$W=1$ & Adaptive $W(x)$
+}
+}{
+Shape meshing with an increasing number of points. Left: uniform meshing, right: adaptive meshing.%
+}{fig-shape-meshing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Delaunay Refinement}
+
+The farthest point method automatically selects at each step the best point so that the sampling conforms to the Riemannian metric and are evenly spread over the domain according to the geodesic distance. It does not take into account the shape of the triangles, which is however important for some application. For instance, for the numerical simulation of elliptic PDEs, it is necessary to have triangles that are as equilateral as possible. For other applications, triangles are allowed to have small angles, but should not have large angles, see~\cite{shewchuk-what-is}. 
+
+%%
+\paragraph{Triple point refinement.}
+
+Excepted maybe during the first few iterations of the farthest point seeding, one notes that the farthest point selected by the algorithm is a triple point $x_{i,j,\ell}$ for $(i,j,k) \in \delaunayF(\startP)$, possibly located along the boundary when one of the index $i,j,k$ is $\boundvert$. 
+
+A generalization of this scheme inserts at each step an arbitrary triple point $x_{i,j,k}$ according to some quality measure $\rho(i,j,k)$. Similarly to the farthest point refinement \ref{subsec-fp-meshing-domain}, the method should also take care of the boundary that is constrained to be part of the Delaunay graph.
+
+In the Euclidean setting, these methods where introduced by Ruppert and Chew~\cite{ruppert-delaunay-refinement,chew-refinement}, see also~\cite{shewchuk-delaunay-refinement}. They consists in choosing at each iteration a triple point, which is a circumcenter of the Delaunay triangulation. These points are inserted in order to split triangles that are poorly shaped according to $\rho(i,j,k)$, and also to ensure a minimum size of the triangles.
+These methods have been extended to built anisotropic meshes with a varying density using a local modification of the metric~\cite{borouchaki-delaunay} or anisotropic elastic forces~\cite{bossen-pliant} and bubble packing~\cite{yamakawa-bubble-packing}. 
+
+%,huang-metric-tensor% shimada-packing,
+
+
+%%
+\paragraph{Pseudo-geodesic Delaunay refinement.}
+
+In order to incorporate global constraints within a provably correct Delaunay refinement scheme, Labelle and Shewchuk~\cite{labelle-anisotropic-voronoi} make us of a Riemannian metric $\tensor{x}$ and use the pseudo-distance
+\eq{
+	\tilde d(x,y)^2 = \transp{(x-y)} \tensor{x} (x-y).
+}
+Note that $\tilde d$ is not equal to the geodesic distance $d(x,y)$ unless $\tensor{x}$ is constant. In particular it is not symmetric and does not satisfies the triangular inequality. For instance, Voronoi region according to $\tilde d$ might have several connected component, which makes them more difficult to handle.
+
+If one considers close enough points $x,y$, $\tilde d(x,y)$ is however a good approximation of the geodesic distance, and is easier to manipulate numerically. Labelle and Shewchuk~\cite{labelle-anisotropic-voronoi} generalizes Delaunay refinement using this pseudo-geodesic metric $\tilde d$, and they prove that for a large enough number of points, this algorithm produces a correct triangulation conforming to the metric field.
+
+This algorithm is extended in 3D by~\cite{boissonnat-anisotropic,boissonnat-locally-uniform} and to domains with curves by~\cite{yokosuka-anisotropic}. This pseudo-geodesic distance $\tilde d$ has also been applied to image sampling~\cite{feng-anisotropic-noise} and surface remeshing~\cite{valette-anisotropic-remeshing}. % , optimal samples placement with centroidal tessellation~\cite{du-anisotropic-cvt}
+
+%%
+\paragraph{Geodesic Delaunay refinement.}
+
+It is possible to truly extend the Delaunay refinement to the manifold setting by generalizing the geodesic farthest point sampling and meshing~\cite{bougleux-grouping}. This necessitate to compute geodesic distance on a fine grid using the numerical schemes detailed in Chapter \ref{chapter2}, but creates high quality mesh even if the number of sample is quite low, because the geodesic distance $d(x,y)$ better integrates the variations and the anisotropy of the metric $\tensor{x}$ than the pseudo-distance $\tilde d(x,y)$ does.
+
+In order to compute an anisotropic mesh with triangles of high quality with respect to the local metric, one inserts $x_{i,j,k}$ for a Delaunay triangle $(i,j,k) \in \delaunayF(\startP)$ with the smallest circumradius to shortest edge ratio
+\eq{
+	\rho(i,j,k) = \frac{ d(x_{i,j,k},x_i) }{ \min( d(x_i,x_j), d(x_j,x_k), d(x_k,x_i) ) },
+}
+which is a quantity computed for each triple point in parallel to the Fast Marching propagation. 
+
+In the Euclidean domain, a triangle $(x_i,x_j,x_k)$ with a large value of $\rho(i,j,k)$ is badly shaped since its smallest angle is close to 0, see Figure \ref{fig-aspect-ratio}. As explained in~\cite{labelle-anisotropic-voronoi}, this property extends to an anisotropic metric $\tensor{x}$ if angles are measured using the inner product defined by $\tensor{x}$.
+
+
+\myfigure{ 
+\tabdeux{
+\image{geodesic-sampling}{0.4}{figures/aspect-ratio-1}&
+\image{geodesic-sampling}{0.4}{figures/aspect-ratio-2}\\
+Low $\rho(i,j,k)$ & Large $\rho(i,j,k)$
+}
+}{
+Examples of triangles with low (left) and large (right) aspect ratio.%
+}{fig-aspect-ratio}
+
+A geodesic domain meshing algorithm is proposed in~\cite{bougleux-grouping}, that generalizes the approach of~\cite{labelle-anisotropic-voronoi} by making use of the true geodesic distance inside the domain. It iteratively inserts the triple point $x_{i,j,k}$ with the largest aspect ratio $\rho(i,j,k)$. During the iterations, boundary middle points $\tilde x_{i,j}$ defined in \eqref{eq-dfn-boun-midpoint} and isolation fixing points $\bar x_{i,j}$ defined in \eqref{eq-dfn-isolation-fixing} are added. This allows to maintain the geodesic Delaunay triangulation a valid planar constrained triangulation of $\manif$.
+
+A bound $\eta_\rho$ on $\rho$ enforces the refinement to reach some quality criterion, while a bound $\eta_U$ enforces a uniform refinement to match some desired triangle density.
+
+
+% Another difficulty is that the Delaunay graph $\delaunay(\startP)$ of $\startP$ is not necessarily a valid triangulation if the sampling $\startP$ is not dense enough, see~\cite{leibon-delaunay-manifold}. This is because of some isolated point, that is connected to only one other point of $\startP$ in $\delaunay(\startP)$. The algorithm automatically add points on the Voronoi cell boundary of such a point.
+
+Table \ref{listing-meshing} details this algorithm. Note that this algorithm only requires a local update of the distance map $U_\startP$ and the Voronoi segmentation when a new point is added, so that its complexity is similar to the complexity of the farthest point algorithm.
+
+\algo{
+	\algstep{Initialization} set $\startP$ so that $\partial \manif$ is covered by $\delaunay(\startP)$.\\
+	%, compute $U_{\startP}$ with a Fast Marching.\\
+	\Repeat{$\rho(i^\star,j^\star,k^\star) <  \eta_\rho$ or $U_{\startP}(x_{i^\star,j^\star,k^\star}) < \eta_U$}{
+		\algstep{Boundary enforcement} while it exists $i \boundlink j$ encroached, 
+			add $\startP \leftarrow \startP \cup \{ \tilde x_{i,j} \}$.\\
+		\algstep{Triangulation enforcement} while it exists $(i,j) \in \delaunay(\startP)$ with  $x_i$ isolated, 
+			add $\startP \leftarrow \startP \cup \{ \bar x_{i,j} \}$.\\
+		\algstep{Select point} $(i^\star,j^\star,k^\star) = \uargmax{(i,j,k) \in \delaunayF(\startP)} \rho(i,j,k)$.
+			Add it: $\startP \leftarrow \startP \cup \{ x_{i^\star,j^\star,k^\star} \}$.\\
+	}	
+}{Geodesic planar domain meshing algorithm.}{listing-meshing}
+
+Figure \ref{fig-anisotropic-mesh} shows the influence of the anisotropy of the metric on the shape of the triangles.
+Figure \ref{fig-meshing-anisotropy} shows an example of anisotropic meshing, where the user controls the shape of the triangle by designing the tensor field. 
+
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{.32}{meshing-domain/aniso005-v}&
+\image{geodesic-sampling}{.32}{meshing-domain/aniso02-v}&
+\image{geodesic-sampling}{.32}{meshing-domain/aniso06-v}\\
+\image{geodesic-sampling}{.32}{meshing-domain/aniso005-d}&
+\image{geodesic-sampling}{.32}{meshing-domain/aniso02-d}&
+\image{geodesic-sampling}{.32}{meshing-domain/aniso06-d}\\
+$\al=0.9$ & $\al=0.4$ & $\al=0.1$ 
+}
+}{
+Meshing of a square with a metric of decreasing anisotropy of a same synthetic 
+tensor field. Top: Voronoi diagrams, tensor fields and 
+points added by the algorithm. Bottom: resulting meshes.%
+}{fig-anisotropic-mesh}
+
+
+
+\myfigure{ 
+\tabtrois{
+\image{geodesic-sampling}{.32}{meshing-domain/d0}&
+\image{geodesic-sampling}{.32}{meshing-domain/d2}&
+\image{geodesic-sampling}{.32}{meshing-domain/d1}\\
+$\tensor{x}$ & Voronoi $\voronoi(\startP)$ & Mesh $\delaunay(\startP)$
+}
+}{
+Example of anisotropic domain meshing. %
+}{fig-meshing-anisotropy}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Centroidal Relaxation}
+
+Greedy sampling methods do not modify the location of an already seeding vertex.
+It is possible to enhance the quality of a greedy sampling by some global relaxation scheme, that moves the locations $\startP$ to minimizes some energy $E(\startP)$. This energy might depend on the problem the sampling is intended to solve. This section considers a quantization energy popular in applications ranging from clustering to numerical integration. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Optimal Quantization Problem}
+
+Given a budget $N$ of points, an optimal sampling minimizes the energy 
+\eql{\label{eq-energy-min-cvt}
+	\umin{|\startP| = N} E(\startP).
+}
+A general rule to design an energy is to look for a sampling $\startP$ that minimize a weighted $L^p$ norm over $\Mm$ of the geodesic distance map $U_{\startP}$ to $\startP$
+\eql{\label{eq-energy-cvt}
+	E(\startP) = \int_{\manif} \rho(y) U_{\startP}(y)^p \d y
+	= \int_\manif \umin{i \in I} \rho(y) d(x_i,y)^p \d y.
+}
+where $\rho(y)>0$ is a weighting function.
+Introducing the Voronoi segmentation $\voronoi(\startP)$ defined in \eqref{eq-voronoi-segm-bis}, this energy is re-written as
+\eq{
+	E(\startP) = \sum_{ \Cc_i \in \voronoi(\startP) } \int_{\Cc_i} \rho(y) d(x_i,y)^p \d y
+}
+This minimization \eqref{eq-energy-min-cvt} corresponds to finding an optimal discrete sampling to approximate the continuous manifold $\manif$, and is refereed to an optimal quantization problem~\cite{gruber-optimal-quantization}.
+
+Optimal sets for the quadratic quantization cost $p=2$ can be shown to be asymptotically (when $N$ is large) $\epsilon$-net, in the sense that they satisfy \eqref{eq-condition-covering} and \eqref{eq-condition-packing} for some $\epsilon$ that depends on $N$ and the curvature of the manifold, see~\cite{clarkson-epsilon-nets}. See also~\cite{gruber-optimal-quantization,gruber-asympt-approx}.
+ 
+When the manifold is Euclidean $\manif = \RR^d$, the optimization \eqref{eq-energy-cvt} becomes
+\eql{\label{eq-energy-min-cvt-eucl}
+	\umin{|\startP| = N} \int_{\RR^d} \rho(y) \umin{i \in I} \norm{x_i-y}^p \d y.
+}
+This corresponds to the problem of vector quantization in coding~\cite{lloyd-quantiz}. This is also related to the problem of approximating a probability density $\rho$ by a discrete density composed of Diracs at locations $\{x_i\}_{i \in I}$, and to the search for optimal cubature rules for numerical integration~\cite{du-centroidal}. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Lloyd Algorithm}
+
+The energy $E$ is highly non-convex, and finding an optimal set of $N$ points that minimizes $E$ is difficult. One has to use an iterative scheme that converges to some local minimum of $E$. A good initialization is thus important for these schemes to be efficient, and on can for instance use an initial configuration computed with the farthest point algorithm detailed in Section \ref{subsec-farthest-sampling}.
+
+
+%%
+\paragraph{Joint minimization.}
+
+The minimization \eqref{eq-energy-min-cvt} on the points is replaced by a joint optimization on both the points and their associated regions
+\eq{
+	\umin{|\startP| = N} E(\startP) = \umin{ |\startP| = N, \voronoi \in \Pp_N(\manif) }  
+	E(\startP, \voronoi) = \sum_{ \Cc_i \in \voronoi} \int_{\Cc_i} \rho(y) d(x_i,y)^p \d y
+}
+where $\Pp_N(\manif)$ is the set of partition of the manifold $\manif$ in $N$ non-overlapping regions, so that $\voronoi \in \Pp_N(\manif)$ is equivalent to 
+\eq{
+	\bigcup_{\Cc_i \in \voronoi} \Cc_i = \manif
+	\qandq
+	\foralls i\neq j, \; \Cc_i \cap \Cc_j = \partial\Cc_i \cap \partial\Cc_j.
+}
+
+%%
+\paragraph{Lloyd coordinate descent.}
+
+Lloyd algorithm~\cite{lloyd-quantiz}, originally designed to solve the Euclidean problem \eqref{eq-energy-min-cvt-eucl}, minimizes alternatively $E(\startP,\voronoi)$ on the sampling point $\startP$ and on the regions $\voronoi$. It alternatively computes the Voronoi cells of the sampling, and then update the sampling to be centroids of the cells.
+Table \ref{tab-lloyd-algo} describes the Lloyd algorithm, and the next two paragraph details more precisely the two update steps that are iterated.
+
+\algo{
+	\algstep{Initialization} set $\startP^{(0)}$ at random, $\ell \leftarrow 0$.\\
+	\Repeat{$\normi{\startP^{(\ell)} - \startP^{(\ell-1)}}<\tol$}{
+		\algstep{Region update} $\voronoi^{(\ell+1)} = \voronoi( \startP^{(\ell)} )$. \\
+		\algstep{Sample update} $\foralls i \in I, \; x_i^{(\ell+1)} = c_p( \Cc_i^{(\ell+1)} )$. \\
+		Set $\ell \rightarrow \ell+1$.
+	}	
+}{Lloyd algorithm.}{tab-lloyd-algo}
+
+
+%%
+\paragraph{Region update.}
+
+For a fixed sampling $\startP = \{x_i\}_{i \in I}$ one can see that the minimizer $\voronoi^\star$ of $E(\startP, \voronoi)$ with respect to $\voronoi$ is the Voronoi segmentation
+\eql{\label{eq-lloyd-step-voronoi}
+	\voronoi^\star = \uargmin{\voronoi \in \Pp_N(\startP)} E(\startP,\voronoi) =  \voronoi( \startP )
+}
+
+%%
+\paragraph{Sample update.}
+
+For a fixed tiling $\voronoi = \{ \Cc_i \}_{i \in I}\in \Pp_N(\manif)$ of the manifold, the minimizer of $E(\startP, \voronoi)$ with respect to $\startP$ is 
+\eq{
+	\uargmin{|\startP| = N} E(\startP,\voronoi)  = \{ c_p( \Cc_i ) \}_{i \in I}
+}
+where the $p$-centroid $c_p( \Cc )$ of a region $\Cc$ is
+\eql{\label{eq-lloyd-step-centroid}
+	c_p( \Cc ) = \uargmin{ x \in \manif } E_\Cc(x) = \int_{\Cc} \rho(y) d(x,y)^p \d y
+}
+If $p>1$, this minimum is unique if $\Cc$ is small enough.
+
+%%
+\paragraph{Convergence of the algorithm.}
+
+The energy $E(\startP^{(\ell)})$ is decaying with $\ell$ during the iterations of Lloyd algorithm.
+One can show that this algorithm converges to some final sampling $\startP^\star$ under some restrictive hypothesis on the manifold~\cite{du-convergence-lloyd}.
+The final sampling $\startP^\star$ is a local minimizer of the energy $E$, and is a so called centroidal Voronoi tessellation, because the samples are the centroids of the voronoi cells, 
+\eql{
+	\startP^\star = \{ c_p( \Cc_i^\star ) \}_{i \in I}
+	\qwhereq
+	\{ \Cc_i^\star \}_i = \voronoi( \startP^\star )
+}
+where the centroid is defined in \eqref{eq-lloyd-step-centroid}.
+Centroidal Voronoi tessellations find many applications, see for instance the review paper~\cite{du-centroidal}.
+
+The functional $E$ can be shown to be piecewise smooth~\cite{liu-centroidal-accelerated}. It is thus possible to use more efficient optimization methods to converge faster to a local minimum, see for instance~\cite{du-lloyd-accelerated,liu-centroidal-accelerated}.
+
+%%
+\paragraph{Euclidean Lloyd.}
+
+In the case of an Euclidean manifold $\manif=\RR^d$ which an Euclidean metric $\tensor{x} = \Id_d$, $d(x,y) = \norm{x-y}$ and the minimization \eqref{eq-lloyd-step-centroid} is
+\eql{\label{eq-lloyd-step-centroid-eucl}
+	c_p( \Cc ) = \uargmin{ x \in \RR^d } E_\Cc(x) = \int_{\Cc} \rho(y) \norm{x-y}^p \d y
+}	
+For $p=2$, it corresponds to the center of gravity (average) 
+\eql{\label{eq-euclidean-center-mass}
+	c_2(\Cc) = m(\Cc) = \frac{1}{\int_\Cc \rho } \int_\Cc \rho(y) y \d y.
+}
+For $p>1$, the functional $E_\Cc$ to minimize is smooth, and $c_p(\Cc)$ can thus be found by gradient or Newton descent.
+
+Figure \ref{fig-lloyd-square} shows an examples of iteration of the Euclidan Lloyd algorihtm for $p=2$. The computation is performed inside a square $\manif \subset \RR^2$, so that Voronoi cells are clipped to constrain them to lie inside $\manif$.
+
+\myfigure{ 
+\tabquatre{
+	\image{geodesic-sampling}{.32}{lloyd-euclidean/lloyd-cst-1}&
+	\image{geodesic-sampling}{.32}{lloyd-euclidean/lloyd-cst-2}&
+	\image{geodesic-sampling}{.32}{lloyd-euclidean/lloyd-cst-4}\\
+	\image{geodesic-sampling}{.32}{lloyd-euclidean/lloyd-varying-1}&
+	\image{geodesic-sampling}{.32}{lloyd-euclidean/lloyd-varying-2}&
+	\image{geodesic-sampling}{.32}{lloyd-euclidean/lloyd-varying-4}\\
+	$\ell=0$ & $\ell=1$ & $\ell=100$
+}
+}{
+Iterations of Lloyd algorithm on a square with Euclidean metric, for a constant density $\rho=1$ (top) and a varying density $\rho(x)$ larger for $x$ in the middle of the square (bottom).
+Blue segments depict the Voronoi cells boundaries, and red segments represent the Delaunay triangulation. %
+}{fig-lloyd-square}
+
+
+For $p \leq 1$, $E_\Cc$ is not smooth, and $c_p(\Cc)$ can be approximated by re-weighted least squares
+\eq{
+	c^{(k+1)} = \uargmin{x \in \RR^d} \int_{\Cc} \rho^{(k+1)}(y) \norm{x-y}^2 \d y
+	= \frac{1}{ \int_\Cc \rho^{(k+1)} } \int_\Cc \rho^{(k+1)}(y) y \d y
+}	
+where the weights at iteration $k$ are
+\eq{
+	\rho^{(k+1)}(y) = \rho(y) \norm{c^{(k+1)}-y}^{p-2}
+}
+For $p=1$, $c_1(\Cc)$ is a multidimensional median of the set $\Cc$, that extends to arbitrary dimension the 1D median. 
+
+
+%%
+\paragraph{Relation to clustering.}
+
+This algorithm is related to the K-means clustering algorithm~\cite{clustering-review} to cluster a large set of points $\{y_j\}_{j \in J} \subset \RR^d$. K-means restricts the computation to discrete points in Euclidean space, so that \eqref{eq-energy-min-cvt-eucl} is replaced by
+\eq{
+	E( \startP ) = \sum_{j \in J} \umin{ i \in I } \rho_j \norm{x_i-y_j}^p
+}
+Step \eqref{eq-lloyd-step-voronoi} corresponds to the computation of a nearest neighbor for each point $y_j$
+\eq{
+	\foralls j \in J, \quad k_j^{(\ell)} = \uargmin{i \in I} \norm{x_i^{(\ell)}-y_j}
+}
+In the case $p=2$, step \eqref{eq-lloyd-step-centroid} is replaces by an average
+\eq{
+	x_i^{(\ell)} = \frac{1}{\sum_{k_j^{(\ell)} = i} \rho_j } \sum_{ k_j^{(\ell)} = i } \rho_j y_j.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Centroidal Tessellation on Manifolds}
+\label{subsec-lloyd-manifold}
+
+The update of the Voronoi cells \eqref{eq-lloyd-step-voronoi} can be computed on arbitrary discrete manifold as detailed in Section \ref{subsec-voronoi-segm-comp}.
+
+The computation of the centroid $c_p$ in \eqref{eq-lloyd-step-centroid} is more difficult. When $p=2$, it corresponds to an intrinsic center of gravity, also called Karcher or Frechet mean~\cite{karcher-geomean}. Such intrinsic mean is popular in computer vision to perform mean and other statistical operations over high dimensional manifold of shapes~\cite{klassen-geodesic-shapes}, see for instance~\cite{lee-shape-manifold}.
+
+
+%%
+\paragraph{Approximation by projection.}
+
+If the manifold is embedded in an Euclidean space, so that $\manif \subset \RR^d$ for some $d$, it is possible to replace the geodesic distance $d(x,y)$ by the Euclidean one $\norm{x-y}$ in $\RR^d$ in \eqref{eq-lloyd-step-centroid}, to obtain
+\eq{
+	\tilde c_p( \Cc ) = \uargmin{ x \in \manif } \tilde E_\Cc(x) = \int_{\Cc} \rho(y) \norm{x-y}^p \d y
+}
+which is called a constraint centroid~\cite{du-anisotropic-centroidal}.
+
+For the case $p=2$, it is shown in~\cite{du-anisotropic-centroidal} that if $\tilde c_2(\Cc)$ is a local minimizer of $\tilde E_\Cc$, then $\tilde c_2(\Cc) - m(\Cc)$ is orthogonal to the surface at $\tilde c_2(\Cc)$, where $m(\Cc)$ is defined in \eqref{eq-euclidean-center-mass}.
+
+One can thus compute a constraint centroid as the projection of the Euclidean center of mass
+\eq{
+	\tilde c_2(\Cc) = \text{Proj}_{\Cc}(m(\Cc))
+	\qwhereq
+	\text{Proj}_{\Cc}(x) = \uargmin{y \in \Cc} \norm{x-y}.
+}	
+If the Voronoi cells are small with respect to the curvature of the manifold, one can show that $\tilde c_2(\Cc)$ is an accurate approximation of $c_2(\Cc)$.
+
+This constraint centroid method can be used to perform grid generation on surfaces, see~\cite{du-centroidal-grid}.
+
+%%
+\paragraph{Approximation by weighted centroid.}
+
+For a Riemannian manifold over a parameterized domain $\manif \subset \RR^d$, it is possible to approximate the anisotropic metric $\tensor{x}$ by an isotropic metric $\tensor{x} = W(x)^2 \Id_d$, for instance using the average of the eigenvalues of the tensors
+\eq{
+	W(x)^2 = \text{Trace}(\tensor{x}) / d
+}
+and replace the geodesic distance by an Euclidean one
+\eq{
+	d(x,y) \approx W(y) \norm{x-y}
+}
+which is accurate if $x$ and $y$ are close and if $\tensor{x}$ is not too anisotropic. The original minimization \eqref{eq-lloyd-step-centroid} is then replaced by a weighted center of mass computation
+\eq{
+	\uargmin{x \in \RR^d} \int_{\Cc} \rho(y) W(y) \norm{x-y} \d y
+	= \frac{1}{\int_\Cc \rho W} \int_\Cc \rho(y) W(y) y \d y.
+}
+This method has been used for isotropic surface remeshing in~\cite{alliez-isotropic}. In this setting, the manifold if 2-dimensional and corresponds to a 2D parameterization of a surface in $\RR^3$.
+
+%%
+\paragraph{Computation by gradient descent.}
+
+When $p=2$, the function $E_\Cc$ is smooth, and its gradient can be computed as
+\eql{\label{eq-gradient-lloyd}
+	\nabla E_\Cc(x) = \int_{\Cc} \rho(y) d(x,y) \frac{\ga_{x,y}'(0)}{\norm{\ga_{x,y}'(0)}} \d y
+}
+where $\ga_{x,y} \in \Pp(x,y)$ is the geodesic joining $x$ and $y$ such that $\ga_{x,y}(0) = x$.
+
+A local minimizer of $E_\Cc$ for $p=2$ can be obtained by gradient descent, as proposed in~\cite{le-frechet-mean,woods-frechet-mean}.
+The computation of the gradient \eqref{eq-gradient-lloyd} is implemented numerically by performing a Fast Marching propagation starting from $x$, as detailed in Section \ref{subsec-fm-methods}, and then extracting geodesic curves $\ga_{x,y}$ for discretized locations $y \in \Cc$ as detailed in Section \ref{subsec-comp-geodesics}.
+
+This method has been used in~\cite{peyre-3dpvt-04} to perform segmentation on 3D surfaces. Figure \ref{fig-lloyd-surf} shows example of iterations of the geodesic Lloyd algorithm on surfaces.
+
+\myfigure{ 
+\tabtrois{
+	\image{geodesic-sampling}{.24}{lloyd-mesh/bunny-lloyd-01}&
+	\image{geodesic-sampling}{.24}{lloyd-mesh/bunny-lloyd-03}&
+%	\image{geodesic-sampling}{.24}{lloyd-mesh/bunny-lloyd-05}&
+	\image{geodesic-sampling}{.24}{lloyd-mesh/bunny-lloyd-20}\\
+	\image{geodesic-sampling}{.24}{lloyd-mesh/elephant-50kv-lloyd-01}&
+	\image{geodesic-sampling}{.24}{lloyd-mesh/elephant-50kv-lloyd-03}&
+%	\image{geodesic-sampling}{.24}{lloyd-mesh/elephant-50kv-lloyd-05}&
+	\image{geodesic-sampling}{.24}{lloyd-mesh/elephant-50kv-lloyd-20}\\
+	$\ell=0$ & $\ell=2$ & $\ell=20$
+}
+}{
+Iterations of Lloyd algorithm on surfaces.%
+}{fig-lloyd-surf}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Perceptual Grouping}
+
+Perceptual grouping is a curve reconstruction problem where one wants to extract a curve from an image containing a sparse set of curves embedded in noise. This problem is relevant both to model good continuation perception laws~\cite{field-association-field,williams-stochastic-field} and to develop efficient edge detection methods. In this paper we restrict ourselves to the detection of a set of non-intersecting open or closed curves, although other kinds of topological or regularity constraints could be enforced.
+
+The idea of using anisotropic information to perform perceptual grouping is introduced in~\cite{guy-contour} where the completed contours are local minimizers of a saliency field. Many variational definitions of perceptual contours have been proposed using local regularity assumption, for instance with the ellastica model of Mumford~\cite{mumford-elastica}, or good continuation principles~\cite{desolneux-grouping}. 
+
+%%
+\paragraph{Riemannian grouping.}
+
+The grouping problem can be formulated as finding curves to join in a meaningful way a sparse set of points $\startP = \{x_i\}_{i \in I}$ while taking into account the information of a 2D image $f(x)$ for $x \in \manif = [0,1]^2$. The regularity and anisotropy of $f$ can be taken into account by designing a Riemannian metric $\tensor{x}$ so that the set of curves are geodesics.
+
+Cohen first propose in~\cite{cohen-contour-finding} an isotropic metric $\tensor{x} = W(x)^2 \Id_2$, where $W(x)$ is a saliency field similar to those considered in Section \ref{sec-metric-design} for active contours.
+This method is extended in Bougleux et al.~\cite{bougleux-grouping} by designing a Riemannian metric $\tensor{x}$ that propagates the anisotropy of the sparse curves to the whole domain. This anisotropic metric helps to disambiguates difficult situations where some curves are close from one to each other. This allows a better reconstruction with less user intervention. 
+
+The metric $\tensor{x}$ computed using the structure tensor as detailed in Section \ref{subsection-structure-tensor}. The value of the structure tensor is retained only in area where its anisotropy $A(x)$ defined in \eqref{eq-anisotropy-energy}, is large, and the resulting tensor field is interpolated in the remaining part of the image, where no directional information is available. Figure \ref{fig-grouping}, center, shows an example of anistropic metric computed from an image representing a noisy curve. 
+
+This idea of interpolation of local orientation is similar to the computation of good continuation field, as studied for instance in stochastic completion fields~\cite{williams-stochastic-field} or tensor voting~\cite{medioni-tensor-voting}. 
+
+\myfigure{ 
+\tabdeux{
+\image{minimal-paths-applis}{0.48}{grouping/eccv}&
+\image{minimal-paths-applis}{0.48}{grouping/eccv_tens}\\
+Image $f$ & Metric $\tensor{x}$ \\
+\image{minimal-paths-applis}{0.48}{grouping/eccv_pot_dist_gr}&
+\image{minimal-paths-applis}{0.48}{grouping/eccv_ani_dist_gr}\\
+Distance, isotropic & Distance anisotropic\\
+\image{minimal-paths-applis}{0.48}{grouping/eccv_ani_recons}&
+\image{minimal-paths-applis}{0.48}{grouping/eccv_pot_recons}\\
+Reconstruction, isotropic & Reconstruction, anisotropic\\
+}
+}{
+Peceptual grouping using isotropic metric (left) and anisotropic metric (right). %
+}{fig-grouping}
+
+%%
+\paragraph{Grouping by geodesic Delaunay pruning.}
+
+The grouping algorithm proceeds by computing a perceptual graph $\tilde\delaunay(\startP)$ of a set of points $\startP$ provided by the user. This perceptual graph is a sub-graph of the Delaunay graph $\tilde\delaunay(\startP) \subset \delaunay(\startP)$. The graph is obtained by selecting in a greedy manner the shortest Delaunay edges. This algorithm is designed to extract curves without crossing, and the valence $\de_i$ of vertices $x_i$ in the perceptual graph is constrains to $\de_i \leq 2$.
+
+Table \ref{listing-grouping} gives the details of the method. It is possible to extend this algorithm to add topological constraints on the curves to detects, or to allow several curves to meet at a crossing point.
+
+This algorithm can be seen as a geodesic extension of methods for curve reconstruction that make use of the Euclidean Delaunay graph~\cite{dey-reconstruction-book}. Popular curve reconstruction methods~\cite{dey-nn-crust,amenta-crust} connect points along combinatorial graph derived from the Delaunay graph of the point set.
+
+\algo{
+	\algstep{Initialization} $\tilde\delaunay(\startP) \leftarrow \emptyset$, 
+			$\Pi \leftarrow \delaunay(\startP)$, $\foralls i \in I, \de_i = 0$.\\
+	\Repeat{$\Pi \neq \emptyset$}{
+			\algstep{Select edge} $(i^\star,j^\star) \longleftarrow \uargmin{(i,j) \in \Pi} d(x_i,x_j)$.
+			\algstep{Remove edge} $\Pi \leftarrow \Pi - \{ (i^\star,j^\star) \}$
+			\algstep{Check topology} 
+				\If{$\de_i < 2$ and $\de_j < 2$}{
+					$\tilde\delaunay(\startP) \leftarrow \tilde\delaunay(\startP) \cup \{(x_i,x_j)\}$ \\
+					$\de_j \leftarrow \de_j+1$ and $\de_i \leftarrow \de_j+1$.
+				}
+			}
+}{Anisotropic perceptual grouping algorithm.}{listing-grouping} 
+
+
+Figure \ref{fig-perceptual-grouping} compares the results of perceptual grouping using an isotropic metric as in~\cite{cohen-contour-finding} and using an anisotropic metric $\tensor{x}$ as in~\cite{bougleux-grouping}. The isotropic method fails because closed curves are connected regardless of their relative orientation. In contrast, our anisotropic metric enables a correct grouping of curves that obey a good continuation property.  
+
+
+
