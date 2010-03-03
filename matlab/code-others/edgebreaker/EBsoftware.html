@@ -1,0 +1,540 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta name=Title
+content="Edgebreaker 3D compression Software Description and Source">
+<meta name=Keywords content="">
+<meta http-equiv=Content-Type content="text/html; charset=macintosh">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 9">
+<meta name=Originator content="Microsoft Word 9">
+<link rel=File-List href="EBsoftware_files/filelist.xml">
+<title>Edgebreaker 3D compression Software Description and Source</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Jarek Rossignac</o:Author>
+  <o:Template>Normal</o:Template>
+  <o:LastAuthor>Jarek Rossignac</o:LastAuthor>
+  <o:Revision>2</o:Revision>
+  <o:Created>2001-05-29T15:20:00Z</o:Created>
+  <o:LastSaved>2001-05-29T15:22:00Z</o:LastSaved>
+  <o:Pages>2</o:Pages>
+  <o:Words>635</o:Words>
+  <o:Characters>3621</o:Characters>
+  <o:Company>CoC</o:Company>
+  <o:Lines>30</o:Lines>
+  <o:Paragraphs>7</o:Paragraphs>
+  <o:CharactersWithSpaces>4446</o:CharactersWithSpaces>
+  <o:Version>9.2511</o:Version>
+ </o:DocumentProperties>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <w:WordDocument>
+  <w:Zoom>150</w:Zoom>
+  <w:DrawingGridHorizontalSpacing>6 pt</w:DrawingGridHorizontalSpacing>
+  <w:DrawingGridVerticalSpacing>6 pt</w:DrawingGridVerticalSpacing>
+  <w:DisplayHorizontalDrawingGridEvery>0</w:DisplayHorizontalDrawingGridEvery>
+  <w:DisplayVerticalDrawingGridEvery>0</w:DisplayVerticalDrawingGridEvery>
+  <w:UseMarginsForDrawingGridOrigin/>
+  <w:Compatibility>
+   <w:SpaceForUL/>
+   <w:BalanceSingleByteDoubleByteWidth/>
+   <w:DoNotLeaveBackslashAlone/>
+   <w:ULTrailSpace/>
+   <w:DoNotExpandShiftReturn/>
+   <w:AdjustLineHeightInTable/>
+  </w:Compatibility>
+ </w:WordDocument>
+</xml><![endif]-->
+<style>
+<!--
+ /* Font Definitions */
+@font-face
+	{font-family:"Times New Roman";
+	panose-1:2 2 6 3 5 4 5 2 3 4;
+	mso-font-charset:0;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:50331648 0 0 0 1 0;}
+@font-face
+	{font-family:Arial;
+	panose-1:2 11 6 4 2 2 2 2 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:50331648 0 0 0 1 0;}
+@font-face
+	{font-family:Garamond;
+	panose-1:0 0 0 0 0 0 0 0 0 0;
+	mso-font-alt:Times;
+	mso-font-charset:77;
+	mso-generic-font-family:roman;
+	mso-font-format:other;
+	mso-font-pitch:auto;
+	mso-font-signature:0 3 3 0 3 124293092;}
+@font-face
+	{font-family:"Arial Unicode MS";
+	mso-font-alt:Times;
+	mso-font-charset:128;
+	mso-generic-font-family:swiss;
+	mso-font-pitch:variable;
+	mso-font-signature:-1 -369098753 63 0 4129023 0;}
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-parent:"";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:Times;}
+h2
+	{mso-style-next:Normal;
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	mso-pagination:widow-orphan;
+	page-break-after:avoid;
+	mso-outline-level:2;
+	font-size:14.0pt;
+	font-family:Helvetica;
+	font-weight:bold;
+	font-style:italic;}
+h3
+	{mso-style-next:Normal;
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	mso-pagination:widow-orphan;
+	page-break-after:avoid;
+	mso-outline-level:3;
+	font-size:13.0pt;
+	font-family:Arial;
+	font-weight:bold;}
+h4
+	{mso-style-next:Normal;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	page-break-after:avoid;
+	mso-outline-level:4;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	color:maroon;
+	text-decoration:underline;
+	text-underline:single;
+	font-weight:normal;}
+p.MsoBodyText, li.MsoBodyText, div.MsoBodyText
+	{margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:11.0pt;
+	font-family:"Times New Roman";}
+p.MsoBodyTextIndent, li.MsoBodyTextIndent, div.MsoBodyTextIndent
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+p.MsoBodyTextIndent2, li.MsoBodyTextIndent2, div.MsoBodyTextIndent2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:1.0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+a:link, span.MsoHyperlink
+	{color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{color:purple;
+	text-decoration:underline;
+	text-underline:single;}
+p
+	{margin-right:0in;
+	mso-margin-top-alt:auto;
+	mso-margin-bottom-alt:auto;
+	margin-left:0in;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+pre
+	{margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt;
+	font-size:10.0pt;
+	font-family:"Arial Unicode MS";}
+@page Section1
+	{size:8.5in 11.0in;
+	margin:.5in 49.5pt .5in 58.5pt;
+	mso-header-margin:.5in;
+	mso-footer-margin:.3in;
+	mso-paper-source:0;}
+div.Section1
+	{page:Section1;}
+ /* List Definitions */
+@list l0
+	{mso-list-id:403837513;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1659426660 984073 1639433 1770505 984073 1639433 1770505 984073 1639433 1770505;}
+@list l1
+	{mso-list-id:638649629;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1048817776 984073 1639433 1770505 984073 1639433 1770505 984073 1639433 1770505;}
+@list l2
+	{mso-list-id:724991233;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1897493330 143174752 143174752 984073 984073 1639433 1770505 984073 1639433 1770505;}
+@list l2:level1
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:.75in;
+	mso-level-number-position:left;
+	margin-left:.75in;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l2:level2
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:1.25in;
+	mso-level-number-position:left;
+	margin-left:1.25in;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l2:level3
+	{mso-level-tab-stop:135.0pt;
+	mso-level-number-position:left;
+	margin-left:135.0pt;
+	text-indent:-.25in;}
+@list l3
+	{mso-list-id:1299801742;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1897493330 143174752 143174752 984073 984073 1639433 1770505 984073 1639433 1770505;}
+@list l3:level1
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l3:level2
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:1.0in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l3:level3
+	{mso-level-tab-stop:117.0pt;
+	mso-level-number-position:left;
+	margin-left:117.0pt;
+	text-indent:-.25in;}
+@list l4
+	{mso-list-id:1350833031;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1579021662 984073 1639433 1770505 984073 1639433 1770505 984073 1639433 1770505;}
+@list l5
+	{mso-list-id:1471904404;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1897493330 143174752 143174752 984073 984073 1639433 1770505 984073 1639433 1770505;}
+@list l5:level1
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:.75in;
+	mso-level-number-position:left;
+	margin-left:.75in;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l5:level2
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:1.25in;
+	mso-level-number-position:left;
+	margin-left:1.25in;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l5:level3
+	{mso-level-tab-stop:135.0pt;
+	mso-level-number-position:left;
+	margin-left:135.0pt;
+	text-indent:-.25in;}
+@list l6
+	{mso-list-id:1663653099;
+	mso-list-type:hybrid;
+	mso-list-template-ids:648422042 143174752 197641 328713 66569 197641 328713 66569 197641 328713;}
+@list l6:level1
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:39.0pt;
+	mso-level-number-position:left;
+	margin-left:39.0pt;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l7
+	{mso-list-id:1989048683;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1897493330 984073 143174752 984073 984073 1639433 1770505 984073 1639433 1770505;}
+@list l7:level2
+	{mso-level-start-at:5;
+	mso-level-number-format:bullet;
+	mso-level-text:-;
+	mso-level-tab-stop:1.0in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	font-family:"Times New Roman";}
+@list l7:level3
+	{mso-level-tab-stop:117.0pt;
+	mso-level-number-position:left;
+	margin-left:117.0pt;
+	text-indent:-.25in;}
+ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+<!--[if gte mso 9]><xml>
+ <o:shapedefaults v:ext="edit" spidmax="1027">
+  <o:colormenu v:ext="edit" fillcolor="#ff9"/>
+ </o:shapedefaults></xml><![endif]--><!--[if gte mso 9]><xml>
+ <o:shapelayout v:ext="edit">
+  <o:idmap v:ext="edit" data="1"/>
+ </o:shapelayout></xml><![endif]-->
+</head>
+
+<body bgcolor="#ffff99" lang=EN-US link=blue vlink=purple style='tab-interval:
+.5in'>
+
+<div class=Section1>
+
+<p class=MsoNormal><span style='font-size:34.0pt;font-family:Garamond'><b>Edgebreaker
+Software<o:p></o:p></b></span></p>
+
+<p style='margin:0in;margin-bottom:.0001pt;text-align:justify'><span
+style='font-size:10.0pt'>The Edgebreaker software is divided into two modules: EBCompression
+and EBDecompression. The software is based on the Edgebreaker compression
+technique developed by <a
+href="http://www.gvu.gatech.edu/people/official/jarek.rossignac/"><span
+style='font-family:Garamond;color:windowtext;text-decoration:none;text-underline:
+none'><span style='mso-field-code:"HYPERLINK \0022http\:\/\/www\.gvu\.gatech\.edu\/~jarek\/\0022"'><span
+style='color:blue'><u>Prof. Rossignac</u></span></span></span></a> and his
+colleagues.<span style="mso-spacerun: yes">&nbsp; </span>Please see the 2.5
+page pseudo-code (<a
+href="http://www.gvu.gatech.edu/~jarek/edgebreaker/eb/EBpseudocode.pdf">PDF</a>)
+for details.<o:p></o:p></span></p>
+
+<p style='margin:0in;margin-bottom:.0001pt;text-align:justify'><span
+style='font-size:10.0pt'>To help us track of usage of Edgebreaker and keep you
+inform of the latest development, please email to a brief description of your
+application, the name of your organization, and your name and position to </span><span
+style='font-size:11.0pt'><a href="mailto:jarek@cc.gatech.edu">jarek@cc.gatech.edu</a></span><span
+style='font-size:9.0pt'>. </span><span style='font-size:10.0pt'>Thank you.<o:p></o:p></span></p>
+
+<p class=MsoNormal>Two mesh types are currently supported: MANIFOLD and TPATCH.</p>
+
+<h4 style='margin-left:39.0pt;text-indent:-.25in;mso-list:l6 level1 lfo2;
+tab-stops:list 39.0pt'><![if !supportLists]><span style='font-size:10.0pt;
+color:windowtext;text-decoration:none;text-underline:none'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt;color:windowtext;
+text-decoration:none;text-underline:none'>A <b>MANIFOLD</b></span><span
+style='font-size:10.0pt;color:windowtext;text-decoration:none;text-underline:
+none'> is a manifold mesh with no boundary. All edges have exactly two incident
+triangles. All vertices have exactly one cycle of incident triangles. All
+triangles in the mesh are consistently oriented. To reduce transmission cost, a
+corner incident to a vertex that has the largest number of incident triangles
+should be passed as argument.<o:p></o:p></span></h4>
+
+<p style='margin-top:0in;margin-right:0in;margin-bottom:0in;margin-left:39.0pt;
+margin-bottom:.0001pt;text-align:justify;text-indent:-.25in;mso-list:l6 level1 lfo2;
+tab-stops:list 39.0pt'><![if !supportLists]><span style='font-size:10.0pt'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>A <b>TPATCH</b></span><a
+name="_TPATCH_is_a"></a><span style='font-size:10.0pt'> is a manifold mesh with
+a single manifold bounding curve. To simplify compression, we ask that the
+application adds a dummy vertex to the mesh and creates a fan of dummy
+triangles that connect the dummy vertex with the edges of the hole. On of the
+corners incident upon that dummy vertex should be passed as argument to the
+compression routine. After decompression, the client application is responsible
+for discarding the dummy vertex and its incident triangles. The dummy vertex
+will be vertex 0 in the decompressed mesh. Note that Edgebreaker does not
+encode the dummy vertex nor the dummy triangles. A flag in the header of the
+file and the count of the edges in the hole suffice to reconstruct them.<o:p></o:p></span></p>
+
+<h4><span style='font-size:10.0pt;color:windowtext;text-decoration:none;
+text-underline:none'>We hope to provide in the future separate pre-processing
+and post-processing modules for efficiently dealing with holes and non-manifold
+situations. For now, triangle meshes with <b>non-manifold</b></span><span
+style='font-size:10.0pt;color:windowtext;text-decoration:none;text-underline:
+none'> singularities and with more than one hole must be preprocessed before
+compression is invoked. Non-manifold situations may be converted to manifold
+ones by replicating edges and vertices (see for example our work on
+pseudo-manifold representations of non-manifold solids: </span><span
+style='font-size:11.0pt;color:windowtext;text-decoration:none;text-underline:
+none'><a href="http://www.gvu.gatech.edu/~jarek/papers/match.pdf"><span
+style='color:windowtext;text-decoration:none;text-underline:none'>PDF</span></a></span><span
+style='font-size:10.0pt;color:windowtext;text-decoration:none;text-underline:
+none'>). Each additional <b>hole</b></span><span style='font-size:10.0pt;
+color:windowtext;text-decoration:none;text-underline:none'> may be plugged by a
+fan of <b>dummy triangles</b></span><span style='font-size:10.0pt;color:windowtext;
+text-decoration:none;text-underline:none'> incident upon a <b>dummy vertex</b></span><span
+style='font-size:10.0pt;color:windowtext;text-decoration:none;text-underline:
+none'>. The Ids of the dummy vertices should be encoded. The dummy vertices and
+their incident triangles should be removed after decompression. <o:p></o:p></span></h4>
+
+<h4><span style='font-size:10.0pt;color:windowtext;text-decoration:none;
+text-underline:none'>We have opted for a parallelogram prediction scheme to
+compress geometry. However, it could be easily replaced by other prediction
+schemes <o:p></o:p></span></h4>
+
+<p class=MsoNormal><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></p>
+
+<h3 style='margin:0in;margin-bottom:.0001pt'><span style='font-size:12.0pt'>Compression<a
+name="_EBCompression__"></a> </span><span style='font-size:11.0pt'><a
+href="EBCompression.cpp">compression
+source code</a></span><span style='font-size:12.0pt'><o:p></o:p></span></h3>
+
+<h3 style='margin:0in;margin-bottom:.0001pt'><span style='font-size:11.0pt'>Input
+arguments</span><span class=MsoHyperlink><span style='font-size:10.0pt;
+font-family:"Times New Roman";color:windowtext;text-decoration:none;text-underline:
+none;font-weight:normal'><o:p></o:p></span></span></h3>
+
+<p style='margin-top:0in;margin-right:0in;margin-bottom:0in;margin-left:.5in;
+margin-bottom:.0001pt;text-indent:-.25in;mso-list:l7 level1 lfo4;tab-stops:
+list .5in'><![if !supportLists]><span style='font-size:10.0pt'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>OVTable: The Corner
+Table containing the connectivity and geometry of the mesh in OVTable
+format<span style="mso-spacerun: yes">&nbsp; </span><o:p></o:p></span></p>
+
+<p class=MsoBodyTextIndent style='text-indent:-.25in;mso-list:l7 level1 lfo4;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>MeshType:<span
+style="mso-spacerun: yes">&nbsp; </span>MANIFOLD or TPATCH<span
+style='mso-tab-count:3'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span
+style="mso-spacerun: yes">&nbsp; </span><o:p></o:p></span></p>
+
+<p class=MsoBodyTextIndent2 style='margin-left:.75in;text-indent:-.25in;
+mso-list:l2 level1 lfo6;tab-stops:list .75in'><![if !supportLists]><span
+style='font-size:10.0pt'>-<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>MANIFOLD - a
+consistently oriented, manifold Triangle mesh, without boundary. <span
+style='mso-tab-count:2'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span
+style="mso-spacerun: yes">&nbsp;&nbsp;</span><o:p></o:p></span></p>
+
+<p class=MsoBodyTextIndent2 style='margin-left:.75in;text-indent:-.25in;
+mso-list:l2 level1 lfo6;tab-stops:list .75in'><![if !supportLists]><span
+style='font-size:10.0pt'>-<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>TPATCH - a manifold mesh
+with a single hole that has been closed with dummy vertices and triangles<o:p></o:p></span></p>
+
+<p style='margin-top:0in;margin-right:0in;margin-bottom:0in;margin-left:.5in;
+margin-bottom:.0001pt;text-indent:-.25in;mso-list:l7 level1 lfo4;tab-stops:
+list .5in'><![if !supportLists]><span style='font-size:10.0pt'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>StartCorner: Is the
+corner where to start EBCompression. <o:p></o:p></span></p>
+
+<p style='margin-top:0in;margin-right:0in;margin-bottom:0in;margin-left:.75in;
+margin-bottom:.0001pt;text-indent:-.25in;mso-list:l5 level1 lfo8;tab-stops:
+list .75in'><![if !supportLists]><span style='font-size:10.0pt'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>If<span
+style="mso-spacerun: yes">&nbsp; </span>MeshType is TPATCH it should be a
+corner corresponding to the dummy vertex.<o:p></o:p></span></p>
+
+<p style='margin-top:0in;margin-right:0in;margin-bottom:0in;margin-left:.75in;
+margin-bottom:.0001pt;text-indent:-.25in;mso-list:l5 level1 lfo8;tab-stops:
+list .75in'><![if !supportLists]><span style='font-size:10.0pt'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>If<span
+style="mso-spacerun: yes">&nbsp; </span>MeshType is MANIFOLD, it can be any
+corner, but since the triangles incident on<span style="mso-spacerun:
+yes">&nbsp; </span>StartCorner are not stored it is advantageous to pass a
+corner with the maximum number of incident triangles.<o:p></o:p></span></p>
+
+<p class=MsoBodyTextIndent2 style='margin-left:.5in;text-indent:-.25in;
+mso-list:l7 level1 lfo4;tab-stops:list .5in'><![if !supportLists]><span
+style='font-size:10.0pt'>4.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>FileFormat: BINARY or
+ASCII<span style="mso-spacerun: yes">&nbsp; </span><o:p></o:p></span></p>
+
+<h3 style='margin:0in;margin-bottom:.0001pt'><span style='font-size:11.0pt'>Output<o:p></o:p></span></h3>
+
+<ol style='margin-top:0in' start=1 type=1>
+ <li class=MsoNormal style='mso-list:l1 level1 lfo17;tab-stops:list .5in'>clers.txt
+     : Contains one symbol per triangle (except for the triangles incident upon
+     vertex 0).</li>
+ <li class=MsoNormal style='mso-list:l1 level1 lfo17;tab-stops:list .5in'>vertices.txt<span
+     style="mso-spacerun: yes">&nbsp; </span>Contains the deltas corrective
+     vectors between the predicted and the actual vertex locations.</li>
+ <li class=MsoNormal style='mso-list:l1 level1 lfo17;tab-stops:list .5in'>handles.txt
+     : Contains pairs of corners that identify pairs of edges that
+     decompression should glue in order to restore all the handles from the
+     CLERS string</li>
+</ol>
+
+<p class=MsoNormal><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></p>
+
+<h3 style='margin:0in;margin-bottom:.0001pt'><span style='font-size:12.0pt'>Decompression
+</span><span style='font-size:11.0pt'><a
+href="EBDecompression.cpp">decompression
+source code</a></span><span style='font-size:12.0pt'><o:p></o:p></span></h3>
+
+<h3 style='margin:0in;margin-bottom:.0001pt'><span style='font-size:11.0pt'>Input
+arguments</span><span class=MsoHyperlink><span style='font-size:10.0pt;
+font-family:"Times New Roman";color:windowtext;text-decoration:none;text-underline:
+none;font-weight:normal'><o:p></o:p></span></span></h3>
+
+<p style='margin-top:0in;margin-right:0in;margin-bottom:0in;margin-left:.5in;
+margin-bottom:.0001pt;text-indent:-.25in;mso-list:l4 level1 lfo11;tab-stops:
+list .5in'><![if !supportLists]><span style='font-size:10.0pt'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:10.0pt'>InputFileDir:<span
+style="mso-spacerun: yes">&nbsp; </span>Directory with clers.txt handles.txt
+vertices.txt <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:.5in;text-indent:-.25in;mso-list:l4 level1 lfo11;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]> OutFileName: Name of output file <span
+style='font-size:10.0pt'><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:.5in;text-indent:-.25in;mso-list:l4 level1 lfo11;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>Input file format (BINARY or ASCII)<span
+style='font-size:10.0pt'><o:p></o:p></span></p>
+
+<h3 style='margin:0in;margin-bottom:.0001pt'><span style='font-size:11.0pt'>Output
+<o:p></o:p></span></h3>
+
+<ol style='margin-top:0in' start=1 type=1>
+ <li class=MsoNormal style='mso-list:l0 level1 lfo15;tab-stops:list .5in'><span
+     style='font-size:11.0pt'>OVTable <o:p></o:p></span></li>
+</ol>
+
+</div>
+
+</body>
+
+</html>
+
