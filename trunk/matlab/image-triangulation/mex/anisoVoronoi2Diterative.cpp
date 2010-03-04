@@ -118,6 +118,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
   DELETEARRAY(TAB);
   DELETEARRAY(U_n_D);
   DELETEARRAY(Metric);
+  DELETEARRAY(Utmp);
+  DELETEARRAY(Vtmp);
   delete QSeeds;
   return;
 } 

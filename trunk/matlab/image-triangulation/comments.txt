@@ -1,4 +1,5 @@
-- en entrée obligatoire : un champ de tenseur T + une matrice de labels S (0 si aucun label, >=1 si un label, <0 si extérieur au domaine: seeds ponctuels ou non)
+- en entrée obligatoire : un champ de tenseur T + 
+une matrice de labels S (0 si aucun label, >=1 si un label, <0 si extérieur au domaine: seeds ponctuels ou non)
 
 1) Distance + Voronoi à partir de l'entrée obligatoire
   [U,V,dUx,dUy] = anisoVoronoi2Diterative(T,S);
