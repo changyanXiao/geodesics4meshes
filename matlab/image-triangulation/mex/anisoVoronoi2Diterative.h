@@ -1,3 +1,13 @@
+// ======================================================
+// authors: Fethallah Benmansour and Sebastien Bougleux
+// (C) 04 march 2010
+// modifications:
+// - 
+// ======================================================
+
+#ifndef __ANISOVORO2DIT__
+#define __ANISOVORO2DIT__
+
 #include "fm.h"
 #include <iostream>
 #include <vector>
@@ -33,10 +43,12 @@ int size;
 //double hx2, hy2, hxhy;
 //double* U = NULL;// action map
 double* UInit = NULL;// action map (given)
+double* Utmp = NULL; // temporary action map (given)
 double*  dUx = NULL;
 double*  dUy = NULL;
 //int* V = NULL;  // Voronoi
 int* VInit = NULL;  // Voronoi (given if UInit is given)
+int* Vtmp = NULL;  // temporary Voronoi (given if UInit is given)
 int* Seeds = NULL;  // Labels (given if UInit is given)
 short* Q = NULL;
 double* Metric = NULL; // Metric
@@ -117,6 +129,8 @@ void InitializeArrays()
 {
   int x, y, point, Point, v;
   Q = new short[size];
+  Utmp = new double[nxny];
+  Vtmp = new int[nxny];
   Metric = new double[3*size];
   TAB    = new double[5];
   U_n_D  = new double[4];
@@ -198,26 +212,18 @@ void InitializeArrays()
       y = 0;
       point = x + y*Nx;
       Q[point] = kBorder;
-      //U[point] = INFINITE;
-      //V[point] = -1;
       y = Ny-1;
       point = x + y*Nx;
       Q[point] = kBorder;
-      //U[point] = INFINITE;
-      //V[point] = -1;
     }
   for (y = 0; y < Ny; y++)
     {
       x = 0;
       point = x + y*Nx;
       Q[point] = kBorder;
-      //U[point] = INFINITE;
-      //V[point] = -1;
       x = Nx-1;
       point = x + y*Nx;
       Q[point] = kBorder;
-      //U[point] = INFINITE;
-      //V[point] = -1;
     }
   
 }
@@ -236,6 +242,14 @@ int comp_to_real(const int &pos)
 {
   int y = pos / Nx;
   return (pos-Nx*y-1) + (y - 1)*nx;
+}
+
+//================================================================
+int real_to_comp(const int &pos)
+//================================================================
+{
+  int y = pos / nx;
+  return (pos-nx*y+1) + (y+1)*Nx;
 }
 
 //================================================================
@@ -529,14 +543,61 @@ COMMENTS : modified
 }
 
 //================================================================
-void GaussSiedelIterateVoronoi() // modified
+double GaussSeidelIterateVoronoi_sequential(int &pmx)
 //================================================================
 {
-  int point, npoint, k, v, Point;
+  int point, Point, q;
+  double error = 0;
+  double mx = -1, u;
+  pmx = -1;
+  for (point = 0; point < nxny; point++)
+    {
+      Point = real_to_comp(point);
+      q = Q[Point];
+      if (q == kBorder || q == kSeed) 
+	{
+	  Utmp[point] = UInit[point];
+	  Vtmp[point] = VInit[point];
+	  continue;  // check constraints
+	}
+      if (TsitsiklisUpdate(Point, U_n_D))
+	{
+	  //UInit[point] = U_n_D[0];
+	  u = Utmp[point] = U_n_D[0];
+	  dUx[Point]   = U_n_D[1];
+	  dUy[Point]   = U_n_D[2];
+	  //VInit[point] = (int)U_n_D[3];
+	  Vtmp[point] = (int)U_n_D[3];
+	  error = std::max(error, std::fabs(U_n_D[0] - UInit[point]));
+	}
+      else
+	{
+	  u = Utmp[point] = UInit[point];
+	  Vtmp[point] = VInit[point];
+	}
+      if (mx < u)
+	{
+	  mx = u;
+	  pmx = Point;
+	}
+    }
+  for (point = 0; point < nxny; point++)
+    {
+      UInit[point] = Utmp[point];
+      VInit[point] = Vtmp[point];
+    }
+  return error;
+}
+
+//================================================================
+int GaussSiedelIterateVoronoi()
+//================================================================
+{
+  int point, npoint, k, v, Point, pmx = -1;
   bool is_updated = false;
-  double mx = -1;
-  int pmx;
   short q;
+  //------------------------------------------------------------
+  // iterative propagation
   //------------------------------------------------------------
   while (!waiting_Points.empty()) 
     {
@@ -569,14 +630,18 @@ void GaussSiedelIterateVoronoi() // modified
 		      Q[npoint] = kEnqueuedEstimated;
 		    }
 		} 
-	    }             
-	  else
-	    {
-	      //if (mx < UInit[point-(Nx+1)]) { mx = UInit[point-(Nx+1)]; pmx = point; } 
 	    }
 	}
     }
-  //return pmx;
+  //------------------------------------------------------------
+  // iterated sequential update until convergence
+  //------------------------------------------------------------
+  double error;
+  do 
+    {
+      error = GaussSeidelIterateVoronoi_sequential(pmx);
+    } while (error > tol);
+  return pmx;
 }
 
 //================================================================
@@ -594,3 +659,4 @@ void resize()
       }
 }
 
+#endif
