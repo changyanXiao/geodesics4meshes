@@ -31,6 +31,7 @@ function [Umin,Umax,Cmin,Cmax,Cmean,Cgauss,Normal] = compute_curvature(vertex,fa
 orient = 1;
 
 naver = getoptions(options, 'curvature_smoothing', 3);
+verb = getoptions(options, 'verb', 1);
 
 if size(vertex,1)>size(vertex,2)
     vertex = vertex';
@@ -121,7 +122,9 @@ end
 U = zeros(3,3,n);
 D = zeros(3,n);
 for k=1:n
-    progressbar(k,n);
+    if verb
+        progressbar(k,n);
+    end
     [u,d] = eig(Tv(:,:,k));
     d = real(diag(d));
     % sort acording to [norma,min curv, max curv]

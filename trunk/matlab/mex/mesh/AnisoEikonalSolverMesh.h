@@ -288,7 +288,8 @@ void TsitsiklisTriangle(double* res, GW_GeodesicVertex* pVert, GW_GeodesicFace* 
     if(b_point1 && b_point2){
         k = U1-U2; u = U2;
         TsitsiklisTwoPoints(res, M, k, u, X12, X2);
-        res[2] = res[0]*V1 +(1-res[0])*V2;
+        //res[2] = res[0]*V1 +(1-res[0])*V2;
+	res[2] = (res[0]>0.5 ? V1 : V2);
         for(i = 3; i < 6; i++)
             res[i] = -(res[0]*X12[i-3] + X2[i-3]);
     }
@@ -395,5 +396,5 @@ void GaussSiedelIterate()
             }
         }
 	}
-    mexPrintf("max iter for a point = %d\n", iter);
+//    mexPrintf("max iter for a point = %d\n", iter);
 };

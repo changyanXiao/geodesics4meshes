@@ -13,7 +13,7 @@ function h = plot_mesh(vertex,face,options)
 %
 %   See also: mesh_previewer.
 %
-%   Copyright (c) 2004 Gabriel Peyré
+%   Copyright (c) 2004 Gabriel Peyre
 
 
 if nargin<2
@@ -153,6 +153,7 @@ switch lower(name)
     case 'bunny'
 %        view(0,-55);
         view(0,90);
+        camorbit(0,20);
     case 'david_head'
         view(-100,10);
     case 'screwdriver'
@@ -161,12 +162,30 @@ switch lower(name)
         view(15,31);
     case 'mannequin'
         view(25,15);
+        view(27,6);
     case 'david-low'
         view(40,3);
+    case 'david-head'
+        view(-150,5);
     case 'brain'
         view(30,40);
     case 'pelvis'
         view(5,-15);
+    case 'fandisk'
+        view(36,-34);
+    case 'earth'
+        view(125,35);
+    case 'camel'
+        view(-123,-5);
+        camroll(-90);
+    case 'beetle'
+        view(-117,-5);
+        camroll(-90);
+        zoom(.85);
+    case 'cat'
+        view(-60,15);
+    case 'nefertiti'
+        view(-20,65);
 end
 view_param = getoptions(options, 'view_param', []);
 if not(isempty(view_param))
