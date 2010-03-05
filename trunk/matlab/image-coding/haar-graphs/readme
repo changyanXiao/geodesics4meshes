@@ -1,6 +1,0 @@
-This is just a very simple multiscale orthogonal transform for signals defined on graphs.
-
-It recursively merge edges in the graph, and tries to perform the merging uniformly so that the size of the wavelet
-progressively increases with the number of the wavelet.
-
-The resulting wavelet are binary, so that thresholding of the coefficient produces a piecewise constant approximation.
