@@ -15,12 +15,12 @@ function [Q,DQ, voronoi_edges, edges_id, lambda] = compute_voronoi_mesh(vertex,f
 %
 %   Copyright (c) 2007 Gabriel Peyre
 
-[vertex,face] = check_face_vertex(vertex,face);
+[vertex,faces] = check_face_vertex(vertex,faces);
 
 n = size(vertex,2);
 nstart = length(start_points);
 options.null = 0;
-verb = getoptions(options, 'verb', 1);
+verb = getoptions(options, 'verb', 0);
 
 options.end_points = [];
 [D0,S,Q0] = perform_fast_marching_mesh(vertex, faces, start_points, options);

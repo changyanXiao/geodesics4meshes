@@ -1,4 +1,4 @@
-function [T] = compute_curvature_tensor_mesh(vertex, faces, Aniso)
+function [T] = compute_curvature_tensor_mesh(vertex, faces, method, options)
 %
 %   compute_curvature_tensor_mesh - compute a curvature tensor on a
 %   triangulated mesh, given a maximal anisotropy ratio
@@ -31,14 +31,30 @@ function [T] = compute_curvature_tensor_mesh(vertex, faces, Aniso)
 %
 %   Copyright (c) 2010 Fethallah Benmansour --CVLab-EPFL--
 
+if nargin<3
+    method = 'exp';
+end
+
+% anisotropy ratio
+aniso = getoptions(options, 'aniso', 1);
+
 T = zeros( [6, length(vertex)] );
 
 options.verb = 0;
 [Umin,Umax,Cmin,Cmax] = compute_curvature(vertex,faces,options);
 
-alpha = 2*log(Aniso) / max(Cmax-Cmin);
-l_max = exp(alpha*Cmax');
-l_min = exp(alpha*Cmin');
+switch method
+    case 'abs'
+        l_max = abs(Cmax');
+        l_min = abs(Cmin');
+    case 'iso'
+        l_max = ones(length(vertex),1)';
+        l_min = ones(length(vertex),1)';
+    case 'exp'
+        alpha = 2*log(Aniso) / max(Cmax-Cmin);
+        l_max = exp(alpha*Cmax');
+        l_min = exp(alpha*Cmin');
+end
 
 T(1,:) = l_max.*Umax(1,:).^2 + l_min.*Umin(1,:).^2;
 T(2,:) = l_max.*Umax(2,:).^2 + l_min.*Umin(2,:).^2;
