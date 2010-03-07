@@ -1,10 +1,14 @@
-function [U,V,dUx,dUy,dUz] = perform_Aniso_Eikonal_Solver_mesh(vertex, faces, T, start_points, options)
+function [U,V,Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, start_points, options)
 
 % perform_Aniso_Eikonal_Solver_mesh - launch the Gauss-Seidel Iterations        
 %                           to compute anisotropic geodesic distances on mesh
 %
-%   [U,V,dUx,dUy,dUz] = perform_Aniso_Eikonal_Solver_mesh(vertex, faces, T,
+%   [U,V,Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T,
 %   start_points, options)
+%
+%   Calls : number of calls of the function
+%   If Calls == 0 then mesh connectivity computed
+%   Else          use the last mesh connectivity
 %
 %   vertex, faces: a 3D mesh
 %   start_points(i) is the index of the ith starting point.
@@ -16,6 +20,10 @@ function [U,V,dUx,dUy,dUz] = perform_Aniso_Eikonal_Solver_mesh(vertex, faces, T,
 %   Optional:
 %   - You can provide special Initial values of the geodesic distance at
 %   the source points conditions for stop in options : 
+%       'options.U_ini_seeds' : initial U values at seed points
+%       'options.V_ini_seeds' : initial V values at seed points
+%   - You can provide special Initial values of the geodesic distance and
+%   voronoi map, so the re-computation is done only near source points:
 %       'options.U_ini' : initial U values
 %       'options.V_ini' : initial V values
 %
@@ -23,6 +31,10 @@ function [U,V,dUx,dUy,dUz] = perform_Aniso_Eikonal_Solver_mesh(vertex, faces, T,
 
 
 options.null = 0;
+U_ini_seeds = getoptions(options, 'U_ini_seeds', []);
+V_ini_seeds = getoptions(options, 'V_ini_seeds', []);
+
+
 U_ini = getoptions(options, 'U_ini', []);
 V_ini = getoptions(options, 'V_ini', []);
 
@@ -36,8 +48,19 @@ start_points = start_points(:);
 
 % use fast C-coded version if possible
 if exist('perform_front_propagation_2d', 'file')~=0
-    [U,V,dUx,dUy,dUz] = AnisoEikonalSolverMesh(vertex-1, faces-1, T,start_points-1,U_ini, V_ini);
-    V = V+1;
+    if(isempty(U_ini))
+        [U,V] = AnisoEikonalSolverMesh(Calls, vertex-1, faces-1, T, start_points-1,...
+                                       U_ini_seeds, V_ini_seeds);
+        V = V+1;
+        Calls = Calls + 1;
+    else
+        V_ini = V_ini-1;
+        AnisoEikonalSolverMesh(Calls, vertex-1, faces-1, T, start_points-1, ...
+                               U_ini_seeds, V_ini_seeds, U_ini, V_ini);
+        V = V_ini+1;
+        U = U_ini;
+        Calls = Calls + 1;
+    end
 else
     error('You have to run compiler_mex before.');
 end
