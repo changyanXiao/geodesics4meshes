@@ -12,80 +12,98 @@ void mexFunction(	int nlhs, mxArray *plhs[],
 {
     //==================================================================
 	/* retrive arguments */
-	if( nrhs<4 ) 
-		mexErrMsgTxt("4 or 5 input arguments are required.");
-	if( nlhs<1  || nlhs>5 ) 
-		mexErrMsgTxt("1 up to 5 output arguments are required.");
+	if( nrhs<7 ) 
+		mexErrMsgTxt("at least 7 input arguments are required.");
+	if( nlhs!=0  && nlhs!=2 ) 
+		mexErrMsgTxt("0 or 2 output arguments are required.");
     //==================================================================
-	// arg1 : vertex
-	vertex = mxGetPr(prhs[0]);
-	nverts = mxGetN(prhs[0]); 
-	if( mxGetM(prhs[0])!=3 )
+	// arg1 : Nb_calls: How many times this function has been called
+    // This parameter avoids the recomputation of the mesh connectivity
+	Nb_calls = (int) mxGetScalar(prhs[0]);
+    mexPrintf("Nb_calls = %d\n", Nb_calls);
+    //NbMax_calls = (int) mxGetPr(prhs[0])[1];
+    //==================================================================
+	// arg2 : vertex
+	vertex = mxGetPr(prhs[1]);
+	nverts = mxGetN(prhs[1]); 
+	if( mxGetM(prhs[1])!=3 )
 		mexErrMsgTxt("vertex must be of size 3 x nverts."); 
 	//==================================================================
-    // arg2 : faces
-	faces = mxGetPr(prhs[1]);
-	nfaces = mxGetN(prhs[1]);
-	if( mxGetM(prhs[1])!=3 )
+    // arg3 : faces
+	faces = mxGetPr(prhs[2]);
+	nfaces= mxGetN(prhs[2]);
+	if( mxGetM(prhs[2])!=3 )
 		mexErrMsgTxt("face must be of size 3 x nfaces."); 
 	//==================================================================
-    // arg3 : Metric (should be symmetric definite positive on the tangent plan)
+    // arg4 : Metric (should be symmetric definite positive on the tangent plan)
     // order of the 6 components for xx, yy, zz, xy, yz, zx
-	if( (mxGetDimensions(prhs[2])[0] != 6) || (mxGetDimensions(prhs[2])[1] != nverts) )
+	if( (mxGetDimensions(prhs[3])[0] != 6) || (mxGetDimensions(prhs[3])[1] != nverts) )
         mexErrMsgTxt("T must be of same size as vertex with 6 components : 6xnverts.");
-	T = mxGetPr(prhs[2]);
+	T = mxGetPr(prhs[3]);
     //==================================================================
-	// arg4 : start_points
-	start_points = mxGetPr(prhs[3]);
-	nstart = mxGetM(prhs[3]);
+	// arg5 : start_points
+	start_points = mxGetPr(prhs[4]);
+	nstart = mxGetM(prhs[4]);
 	//==================================================================	
-	// argument 5 and 6: if initial distance values at source points are given
+	// arg 6 and 7 : if initial distance values at source points are given
     // In this case, provide the intial voronoi indices as well
-	if(nrhs==5)
-        mexErrMsgTxt("4 or 6 argumets required");
-    if( nrhs==6 )
+	if(nrhs==6)
+        mexErrMsgTxt("5 or 7 argumets required");
+    if( nrhs==7 )
 	{
-		U_init_values = mxGetPr(prhs[4]);
-        V_init_values = mxGetPr(prhs[5]);
-		if( mxGetM(prhs[4])==0 && mxGetN(prhs[4])==0 )
-			U_init_values=NULL;
-        if( mxGetM(prhs[5])==0 && mxGetN(prhs[5])==0 )
-			V_init_values=NULL;
-		if( U_init_values!=NULL && (mxGetM(prhs[4])!=nstart || mxGetN(prhs[4])!=1) )
+		U_ini_seeds = mxGetPr(prhs[5]);
+        V_ini_seeds = mxGetPr(prhs[6]);
+		if( mxGetM(prhs[5])==0 && mxGetN(prhs[5])==0 )
+			U_ini_seeds=NULL;
+        if( mxGetM(prhs[6])==0 && mxGetN(prhs[6])==0 )
+			V_ini_seeds=NULL;
+		if( U_ini_seeds!=NULL && (mxGetM(prhs[5])!=nstart || mxGetN(prhs[5])!=1) )
 			mexErrMsgTxt("values must be of size nb_start_points x 1."); 
-        if( V_init_values!=NULL && (mxGetM(prhs[5])!=nstart || mxGetN(prhs[5])!=1) )
+        if( V_ini_seeds!=NULL && (mxGetM(prhs[6])!=nstart || mxGetN(prhs[6])!=1) )
 			mexErrMsgTxt("values must be of size nb_start_points x 1.");
 	}
 	else{
-		U_init_values = NULL;
-        V_init_values = NULL;
+		U_ini_seeds = NULL;
+        V_ini_seeds = NULL;
 	}
 	//==================================================================
-	// first ouput : geodesic distance
-	plhs[0] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
-	U = (double*) mxGetPr(plhs[0]);
-    // second output : voronoi
-	plhs[1] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
-	Vor = (double*) mxGetPr(plhs[1]);
-    // directions of characteristics
-	plhs[2] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
-	dUx = (double*) mxGetPr(plhs[2]);
-    plhs[3] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
-	dUy = (double*) mxGetPr(plhs[3]);
-    plhs[4] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
-	dUz = (double*) mxGetPr(plhs[4]);
+    if(nrhs == 7){
+        // first ouput : geodesic distance
+        plhs[0] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
+    	U = (double*) mxGetPr(plhs[0]);
+        // second output : voronoi
+    	plhs[1] = mxCreateNumericArray(1,&nverts, mxINT16_CLASS, mxREAL ); 
+        Vor = (short*) mxGetPr(plhs[1]);
+        given_u = false;
+    }
+    else if(nrhs == 9){
+        U   = mxGetPr(prhs[7]);
+        Vor = (short*) mxGetPr(prhs[8]);
+        given_u = true;
+    }
 	//==================================================================
-    create_the_mesh();
+    if(Nb_calls == 0){
+        mexPrintf("Creating the Mesh\n");
+        create_the_mesh();
+	}
     //------------------------------------------------------------------
     InitializeArrays();
 	//------------------------------------------------------------------
 	InitializeQueue();
     //------------------------------------------------------------------
 	GaussSiedelIterate();
+    //------------------------------------------------------------------
+    //Nb_calls++;
 	//==================================================================
     DELETEARRAY(S);
     DELETEARRAY(Q);
     DELETEARRAY(ITER);
     DELETEARRAY(TAB);
     DELETEARRAY(U_n_D);
+    //==================================================================
+    //if(Nb_calls >= NbMax_calls){
+    //    mexPrintf("Clening the geodesic Mesh\n");
+    //    Mesh.~GW_Mesh();
+	//}
+    
 };

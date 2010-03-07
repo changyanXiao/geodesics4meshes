@@ -13,6 +13,7 @@ function faces = perform_faces_reorientation(vertex,faces, options)
 
 options.null = 0;
 method = getoptions(options, 'method', 'fast');
+verb = getoptions(options, 'verb', 1);
 
 [vertex,faces] = check_face_vertex(vertex,faces);
 n = size(vertex,2);
@@ -46,7 +47,7 @@ fring = compute_face_ring(faces);
 tag = zeros(m,1)-1;
 heap = 1;
 for i=1:m
-    if m>100
+    if m>100 && verb
         progressbar(i,m);
     end
     if isempty(heap)
