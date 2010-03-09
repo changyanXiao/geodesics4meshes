@@ -58,13 +58,14 @@ double* V_ini_seeds = NULL;
 
 bool given_u;
 // outputs 
-double *U     = NULL;	// distance
-short *Vor   = NULL;	// Voronoi
-short  *S     = NULL;	// state
-short  *Q     = NULL;
-int    *ITER  = NULL;
-double *TAB   = NULL;
-double *U_n_D = NULL;
+double *U        = NULL;	// distance
+short  *Vor      = NULL;	// Voronoi
+short  *S        = NULL;	// state
+short  *Q        = NULL;
+bool   *doUpdate = NULL;
+int    *ITER     = NULL;
+double *TAB      = NULL;
+double *U_n_D    = NULL;
 double *X1, *X2, *X12;
 #define faces_(k,i) faces[k+3*i]
 #define vertex_(k,i) vertex[k+3*i]
@@ -433,12 +434,11 @@ void GaussSiedelIterate()
             for( GW_VertexIterator VertIt = v->BeginVertexIterator(); VertIt!=v->EndVertexIterator(); ++VertIt ){
                 GW_GeodesicVertex* pNewVert = (GW_GeodesicVertex*) *VertIt;
                 npoint = (int) pNewVert->GetID();
-                if( (S[npoint] != kSeed) && (Q[npoint] != kEnqueued)){
+                if( (S[npoint] != kSeed) && (Q[npoint] != kEnqueued) && (doUpdate[point])){
                     waiting_Points.push(npoint);
                     Q[npoint] = kEnqueued;
                 }
             }
         }
 	}
-    mexPrintf("max iter for a point = %d\n", iter);
 };

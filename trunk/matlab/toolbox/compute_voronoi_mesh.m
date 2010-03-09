@@ -1,15 +1,22 @@
 function [Q,DQ, voronoi_edges, edges_id, lambda] = compute_voronoi_mesh(vertex,faces, start_points, options)
 
-% compute_voronoi_mesh - compute the exact voronoi segmentation of a 3D mesh
+% compute_voronoi_mesh - compute the exact voronoi segmentation of a 3D mesh.
 %
-%   [Q,DQ, voronoi_edges, edges_id, edges_lambda] = compute_voronoi_mesh(vertex,faces,start_points, options);
+%   [Q,DQ, voronoi_edges, edges_id, lambda] = compute_voronoi_mesh(vertex,faces,start_points, options);
 %
 %   Q(i) is the voronoi cell number of the i th point in the mesh.
 %   DQ(:,1) is the distance to the closest point.
 %   DQ(:,2) is the distance to the 2nd closest point.
 %   DQ(:,3) is the distance to the 3rd closest point.
 %
-%   voronoi_edges is the of segment that define voronoi cells boundary.
+%   voronoi_edges is the set of segment that define voronoi cells boundary.
+%   voronoi_edges(1:3,i) is connected to voronoi_edges(4:6,:);
+%
+%   Given 
+%       edge = compute_edges(faces);
+%   e = edges_id(:,i) gives an edge where a vornoi boundary passes, 
+%   and v1=vertex(:,e(1)), v2=vertex(:,e(2)), and it passes at point
+%       v1*lambda + v2*(1-lambda).   
 %
 %   See also perform_fast_marching_mesh.
 %
@@ -22,16 +29,18 @@ nstart = length(start_points);
 options.null = 0;
 verb = getoptions(options, 'verb', 0);
 
-options.end_points = [];
-[D0,S,Q0] = perform_fast_marching_mesh(vertex, faces, start_points, options);
-
-D = [];
-for i=1:nstart
-    if verb
-        progressbar(i,nstart);
+D = getoptions(options, 'Dlist', []);
+if isempty(D)
+    options.end_points = [];
+    [D0,S,Q0] = perform_fast_marching_mesh(vertex, faces, start_points, options);
+    D = [];
+    for i=1:nstart
+        if verb
+            progressbar(i,nstart);
+        end
+        options.dmax = max( D0(Q0==start_points(i)) )*1.1;
+        [D(:,i),S,Q] = perform_fast_marching_mesh(vertex, faces, start_points(i), options);
     end
-    options.dmax = max( D0(Q0==start_points(i)) )*1.1;
-    [D(:,i),S,Q] = perform_fast_marching_mesh(vertex, faces, start_points(i), options);
 end
 
 % first hit

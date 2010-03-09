@@ -20,7 +20,7 @@ void mexFunction(	int nlhs, mxArray *plhs[],
 	// arg1 : Nb_calls: How many times this function has been called
     // This parameter avoids the recomputation of the mesh connectivity
 	Nb_calls = (int) mxGetScalar(prhs[0]);
-    mexPrintf("Nb_calls = %d\n", Nb_calls);
+    //mexPrintf("Nb_calls = %d\n", Nb_calls);
     //NbMax_calls = (int) mxGetPr(prhs[0])[1];
     //==================================================================
 	// arg2 : vertex
@@ -67,7 +67,10 @@ void mexFunction(	int nlhs, mxArray *plhs[],
         V_ini_seeds = NULL;
 	}
 	//==================================================================
-    if(nrhs == 7){
+	// arg 8 : boolean array for region to update
+    doUpdate = (bool*) mxGetPr(prhs[7]);
+    //==================================================================
+    if(nrhs == 8){
         // first ouput : geodesic distance
         plhs[0] = mxCreateNumericArray(1,&nverts, mxDOUBLE_CLASS, mxREAL ); 
     	U = (double*) mxGetPr(plhs[0]);
@@ -76,9 +79,9 @@ void mexFunction(	int nlhs, mxArray *plhs[],
         Vor = (short*) mxGetPr(plhs[1]);
         given_u = false;
     }
-    else if(nrhs == 9){
-        U   = mxGetPr(prhs[7]);
-        Vor = (short*) mxGetPr(prhs[8]);
+    else if(nrhs == 10){
+        U   = mxGetPr(prhs[8]);
+        Vor = (short*) mxGetPr(prhs[9]);
         given_u = true;
     }
 	//==================================================================
