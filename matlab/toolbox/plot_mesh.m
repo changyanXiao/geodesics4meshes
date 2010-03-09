@@ -156,8 +156,8 @@ switch lower(name)
         camorbit(0,20);
     case 'david_head'
         view(-100,10);
-    case 'screwdriver'
-        view(-10,25);
+%    case 'screwdriver'
+%        view(-10,25);
     case 'pieta'
         view(15,31);
     case 'mannequin'
@@ -186,6 +186,12 @@ switch lower(name)
         view(-60,15);
     case 'nefertiti'
         view(-20,65);
+    case 'rocker-arm'
+        view(120,-25);
+    case 'screwdriver'
+        view(3);
+        camroll(70);
+        zoom(.7);
 end
 view_param = getoptions(options, 'view_param', []);
 if not(isempty(view_param))

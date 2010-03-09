@@ -5,8 +5,8 @@ add_base_paths;
 path(path, '../../data/meshes-large/');
 
 %if not(exist('metric_type'))
-    metric_type = 'constant';
     metric_type = 'isotropic';
+    metric_type = 'constant';
     metric_type = 'anisotropic';
 %end
 
@@ -18,9 +18,13 @@ end
 %%
 % Load a mesh.
 
-name = 'bunny';
-name = 'elephant-50kv';
 name = 'vase-lion';
+name = 'bunny';
+name = 'kitten';
+name = 'rocker-arm';
+name = 'screwdriver';
+name = 'fertility';
+name = 'elephant-50kv';
 options.name = name;
 [vertex,faces] = read_mesh(name);
 n = size(vertex,2);
@@ -99,36 +103,66 @@ end
 % compute seed matrix (with labels)
 
 landmarks = 1;
-m = 1600; % number of points to seeds
 
 % initialize the map
-[U, V, dUx, dUy, dUz] = perform_Aniso_Eikonal_Solver_mesh(vertex, faces, T, landmarks);
+Calls = 0;
+options.doUpdate = true(n,1);
+[U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks);
+ULoc(:,1) = U;
 
+% smoothing matrix, useful to extend the voronoi
+W = triangulation2adjacency(faces) + speye(n);
+% size of the extension for the voronois
+Vext = 2;
         
-displist = [100 200 300 400 800 1600 3200]; k = 1;
-for i=2:m+10
+m = 6400; % number of points to seeds
+displist = 100 * 2.^(1:log2(m/100));
+k = 1;
+for i=2:m
     progressbar(i,m);
     % farthest points
     [tmp,landmarks(end+1)] = max(U(:));
-    % update
-    [U, V, dUx, dUy, dUz] = perform_Aniso_Eikonal_Solver_mesh(vertex, faces, T, landmarks);
+    % update everywhere
+    options.doUpdate = true(n,1);
+    options.U_ini = U;
+    options.V_ini = V;
+    [U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks(end), options);
+    % compute a slightly enlarge voronoi region
+    v = double(V==i);
+    for iext=1:Vext
+        v = W*v;
+    end
+    v = v>0;
+    options.doUpdate = v;
+    options.U_ini = []; % zeros(n,1);
+    options.V_ini = []; % ones(n,1);
+    [ULoc(:,i), Vloc, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks(end), options);
+    ULoc(v==0,i) = Inf;    
+    % compute Voronoi diagram in sub-pixelic way
+    options.Dlist = ULoc;
+    [Q, DQ, voronoi_edges, edges_id, lambda] = compute_voronoi_mesh(vertex,faces, landmarks, options);
     % display
     if k<=length(displist) && displist(k)==i   
-        V = round(V);       
+        Va = round(double(V));     
         % compute the voronoi triangulation
-        faces1 = compute_voronoi_triangulation_mesh(V, faces);
+        faces1 = compute_voronoi_triangulation_mesh(Va, faces);
         vertex1 = vertex(:,landmarks);
         options.method = 'slow';
-        faces1 = perform_faces_reorientation(vertex1,faces1, options);        
-        clf;
-        options.start_points = landmarks;
-        plot_fast_marching_mesh(vertex,faces, perform_hist_eq(U, 'linear'), [], options);
-        saveas(gcf, [rep name '-' metric_type '-dist-' num2str(i) '.eps'], 'epsc');
-        saveas(gcf, [rep name '-' metric_type '-dist-' num2str(i) '.png'], 'png');        
-        clf;
-        plot_fast_marching_mesh(vertex,faces, V, [], options);
-        saveas(gcf, [rep name '-' metric_type '-vor-' num2str(i) '.eps'], 'epsc');
-        saveas(gcf, [rep name '-' metric_type '-vor-' num2str(i) '.png'], 'png');
+        faces1 = perform_faces_reorientation(vertex1,faces1, options);
+        if i<=800
+            clf;
+            options.start_points = landmarks;
+            plot_fast_marching_mesh(vertex,faces, perform_hist_eq(U, 'linear'), [], options);
+            saveas(gcf, [rep name '-' metric_type '-dist-' num2str(i) '.eps'], 'epsc');
+            saveas(gcf, [rep name '-' metric_type '-dist-' num2str(i) '.png'], 'png');
+            % display voronoi with there boundaries.
+            clf;
+            options.voronoi_edges = voronoi_edges;
+            plot_fast_marching_mesh(vertex,faces, Q(:,1), [], options);
+            saveas(gcf, [rep name '-' metric_type '-vor-' num2str(i) '.eps'], 'epsc');
+            saveas(gcf, [rep name '-' metric_type '-vor-' num2str(i) '.png'], 'png');
+            options.voronoi_edges = [];
+        end
         clf;
         options.face_vertex_color = [];
         plot_mesh(vertex1, faces1, options);

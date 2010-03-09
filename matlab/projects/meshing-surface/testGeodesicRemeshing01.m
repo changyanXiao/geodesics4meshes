@@ -26,7 +26,7 @@ T(3,:) = 1;
 %%
 figure;
 added_points = 1;
-NB_points = 6;
+NB_points = 2;
 start_points = [ start_points floor(rand(nstart,1)*nverts)+1];
 options.start_points = start_points;
 tic
@@ -46,6 +46,27 @@ while added_points < NB_points
     toc
     added_points = added_points+1;
 end
+%%
+options.start_points = start_points;
+figure;
+plot_fast_marching_mesh(vertex,faces, U, [], options);
+zoom(.7);
+%%
+figure;
+plot_fast_marching_mesh(vertex,faces, V, [], options);
+zoom(.7);
+pause;
+%%
+% get a point with voronoi index = 1
+TabV_one = find(V == 1 & U~= 0);
+p = TabV_one(1);
+start_points = [start_points p];
+options.doUpdate = (V == 1);
+options.U_ini = U;
+options.V_ini = V;
+tic
+[U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, start_points(end), options);
+toc
 %%
 options.start_points = start_points;
 figure;

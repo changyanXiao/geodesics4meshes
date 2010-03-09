@@ -66,3 +66,10 @@ switch lower(ext)
     otherwise
         error('Unknown extension.');
 end
+
+if size(vertex,1)>size(vertex,2)
+    vertex = vertex';
+end
+if size(face,1)>size(face,2)
+    vertex = vertex';
+end
