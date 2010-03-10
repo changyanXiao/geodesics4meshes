@@ -21,6 +21,10 @@ options.null = 0;
 lloyd_niter = getoptions(options, 'lloyd_niter', 1);
 Vext = getoptions(options, 'vornoi_extension', 3);
 
+if length(landmarks)~=length(unique(landmarks))
+    warning('Problem, duplicated landmarks');
+end
+
 if lloyd_niter>1
     options.lloyd_niter = 1;
     for i=1:lloyd_niter
@@ -43,6 +47,9 @@ W = triangulation2adjacency(faces) + speye(n);
 
 Calls = 0;
 options.doUpdate = true(n,1);
+options.U_ini = [];
+options.V_ini = [];
+options.U_ini_seeds = [];
 [U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks);
 
 
@@ -65,7 +72,7 @@ for i=1:m
     ULoc(v==0,i) = Inf;
 end
 
-Uland = min(ULoc,[],2);
+[Uland,Q0] = min(ULoc,[],2);
 
 %%
 % Compute Voronoi boundaries.
