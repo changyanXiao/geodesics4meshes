@@ -29,6 +29,8 @@ start_points = getoptions(options, 'start_points', []);
 ve = getoptions(options, 'voronoi_edges', []);
 ms = getoptions(options, 'ms', 25);
 lw = getoptions(options, 'lw', 3);
+startp_col = getoptions(options, 'startp_col', 'r.');
+endp_col = getoptions(options, 'endp_col', 'b.');
 
 colorfx = getoptions(options, 'colorfx', 'none');
 if strcmp(colorfx, 'wrapping')
@@ -51,10 +53,10 @@ for i=1:length(paths)
         end_point = path(:,1);
         start_point = path(:,end);
         % display starting points
-        h = plot3( start_point(1),start_point(2), start_point(3), 'r.');
+        h = plot3( start_point(1),start_point(2), start_point(3), startp_col);
         set(h, 'MarkerSize', ms, 'edgecolor', 'k');
         % display endding points
-        h = plot3( end_point(1), end_point(2), end_point(3), 'b.');
+        h = plot3( end_point(1), end_point(2), end_point(3), endp_col);
         set(h, 'MarkerSize', ms);
         % display geodesic
         h = plot3(path(1,:), path(2,:),path(3,:), 'k');
@@ -64,7 +66,7 @@ end
 % display starting points
 for i=1:length(start_points)
     start_point = vertex(:,start_points(i));
-    h = plot3( start_point(1),start_point(2), start_point(3), 'r.');
+    h = plot3( start_point(1),start_point(2), start_point(3), startp_col);
     set(h, 'MarkerSize', ms);    
 end
 % display voronoi
