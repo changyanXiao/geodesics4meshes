@@ -135,8 +135,12 @@ for i=2:m
     
     % Perform re-centering
     if mod(i,recentering_rate)==0
-        [landmarks,U,Uland,V,voronoi_edges] = perform_lloyd_linfty(vertex,faces, T, landmarks, options);
-        V = int32(V);
+        [landmarks,Ubound,Uland,Vold,voronoi_edges] = perform_lloyd_linfty(vertex,faces, T, landmarks, options);
+        % recompute distance map
+        options.doUpdate = true(n,1);
+        options.U_ini = [];
+        options.V_ini = [];
+        [U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks);
     end
     
     % display
