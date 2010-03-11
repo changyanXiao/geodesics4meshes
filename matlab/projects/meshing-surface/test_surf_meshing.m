@@ -79,6 +79,7 @@ landmarks = 1;
 Calls = 0;
 options.doUpdate = true(n,1);
 [U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks);
+ULoc = [];
 ULoc(:,1) = U;
 
 % smoothing matrix, useful to extend the voronoi
@@ -94,22 +95,20 @@ displist = 100 * 2.^(1:log2(m/100));
 k = 1;
 for i=2:m
     progressbar(i,m);
-    [tmp,landmarks(end+1)] = max(U(:));
     
-    if 0
-        % compute triple point
-        [flist,lambda] = compute_double_points(vertex,face, landmarks, Uloc);
-        if isempty(flist)
-            % take point with farthest distance
-            d = sum(U(flist).*lambda, 3);
-            [tmp,i0] = max(d); f = flist(:,i0); l = lambda(:,i0);
-            % add the point to the mesh
-            vertex(:,end+1) = vertex(:,f).*l;
-            n = n+1;
-        else
-            % farthest points
-            [tmp,landmarks(end+1)] = max(U(:));
-        end
+    % compute triple point
+    [flist,lambda] = compute_triple_points(vertex,faces, landmarks, ULoc);
+    if not(isempty(flist))
+        % take point with farthest distance
+        d = sum(U(flist).*lambda, 1); % linear interpolation of distances
+        [tmp,i0] = max(d); f = flist(:,i0); l = lambda(:,i0);
+        % position in 3D of the new mesh
+        vnew = sum( vertex(:,f).*repmat(l', [3,1]), 2);
+        %%%% REPLACE THIS LINE BY THE CORRECT CODE %%%%
+        [tmp,landmarks(end+1)] = max(U(:));
+    else
+        % farthest points
+        [tmp,landmarks(end+1)] = max(U(:));
     end
     
     % update of the distance map
@@ -117,21 +116,20 @@ for i=2:m
     options.U_ini = U;
     options.V_ini = V;
     [U, V, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks(end), options);
-
-    if 0
-        % compute a slightly enlarged voronoi region
-        v = double(V==i);
-        for iext=1:Vext
-            v = W*v;
-        end
-        v = v>0;
-        % perform propagation on the enlarged region
-        options.doUpdate = v;
-        options.U_ini = []; % zeros(n,1);
-        options.V_ini = []; % ones(n,1);
-        [ULoc(:,i), Vloc, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks(end), options);
-        ULoc(v==0,i) = Inf;
+    
+    
+    % compute a slightly enlarged voronoi region
+    v = double(V==i);
+    for iext=1:Vext
+        v = W*v;
     end
+    v = v>0;
+    % perform propagation on the enlarged region
+    options.doUpdate = v;
+    options.U_ini = []; % zeros(n,1);
+    options.V_ini = []; % ones(n,1);
+    [ULoc(:,i), Vloc, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks(end), options);
+    ULoc(v==0,i) = Inf;
     
     % Perform re-centering
     if mod(i,recentering_rate)==0

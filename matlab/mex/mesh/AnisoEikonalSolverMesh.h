@@ -119,17 +119,17 @@ void InitializeArrays()
     //--------------------------------------------------------
     if(given_u){
         for(x = 0; x < nverts; x++){
-            Q[x]   = kUnqueued;
-            S[x]   = kEstimated;
+            Q[x]    = kUnqueued;
+            S[x]    = kEstimated;
             ITER[x] = 0;
         }
     }
     else{
         for(x = 0; x < nverts; x++){
-            U[x]   = INFINITE;
-            Vor[x] = kBorder;
-            Q[x]   = kUnqueued;
-            S[x]= kBorder;
+            U[x]    = INFINITE;
+            Vor[x]  = kBorder;
+            Q[x]    = kUnqueued;
+            S[x]    = kBorder;
             ITER[x] = 0;
         }
     }
@@ -153,7 +153,7 @@ void InitializeQueue()
                     mexErrMsgTxt("start_points should be in the domain.");
                 //--------------------------------------------------------
                 U[point] = 0.0;
-                S[point] = kSeed; 
+                S[point] = kSeed;
                 Vor[point] = i + 1 + maxVor;
                 //--------------------------------------------------------
                 GW_GeodesicVertex* v = (GW_GeodesicVertex*) Mesh.GetVertex((GW_U32) point);
@@ -175,9 +175,9 @@ void InitializeQueue()
                 if( point >= nverts)
                     mexErrMsgTxt("start_points should be in the domain.");
                 //--------------------------------------------------------
-                U[point]   = U_ini_seeds[point]; 
-                S[point]   = kSeed; 
-                Vor[point] = V_ini_seeds[point]; ;
+                U[point]   = U_ini_seeds[i]; 
+                S[point]   = kEstimated;// Or kSeed ? 
+                Vor[point] = V_ini_seeds[i];
                 //--------------------------------------------------------
                 GW_GeodesicVertex* v = (GW_GeodesicVertex*) Mesh.GetVertex((GW_U32) point);
                 for( GW_VertexIterator VertIt = v->BeginVertexIterator(); VertIt!=v->EndVertexIterator(); ++VertIt ){
@@ -223,9 +223,9 @@ void InitializeQueue()
                 if( point >= nverts)
                     mexErrMsgTxt("start_points should be in the domain.");
                 //--------------------------------------------------------
-                U[point]   = U_ini_seeds[point]; 
-                S[point]   = kSeed; 
-                Vor[point] = V_ini_seeds[point]; ;
+                U[point]   = U_ini_seeds[i]; 
+                S[point]   = kEstimated; 
+                Vor[point] = V_ini_seeds[i]; ;
                 //--------------------------------------------------------
                 GW_GeodesicVertex* v = (GW_GeodesicVertex*) Mesh.GetVertex((GW_U32) point);
                 for( GW_VertexIterator VertIt = v->BeginVertexIterator(); VertIt!=v->EndVertexIterator(); ++VertIt ){
@@ -334,8 +334,8 @@ void TsitsiklisTriangle(double* res, GW_GeodesicVertex* pVert, GW_GeodesicFace* 
     npoint1 = pVert1->GetID();
     npoint2 = pVert2->GetID();
     //----------------------------------------------------------
-	b_point1 = (S[npoint1]==kEstimated) || (S[npoint1]==kSeed);
-    b_point2 = (S[npoint2]==kEstimated) || (S[npoint2]==kSeed);
+	b_point1 = ((S[npoint1]==kEstimated) || (S[npoint1]==kSeed)) && doUpdate[npoint1];
+    b_point2 = ((S[npoint2]==kEstimated) || (S[npoint2]==kSeed)) && doUpdate[npoint2];
     if(b_point1){  U1 = U[npoint1]; V1 = Vor[npoint1];}
     if(b_point2){  U2 = U[npoint2]; V2 = Vor[npoint2];}
     //----------------------------------------------------------

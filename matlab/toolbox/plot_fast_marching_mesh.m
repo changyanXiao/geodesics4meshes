@@ -31,6 +31,7 @@ ms = getoptions(options, 'ms', 25);
 lw = getoptions(options, 'lw', 3);
 startp_col = getoptions(options, 'startp_col', 'r.');
 endp_col = getoptions(options, 'endp_col', 'b.');
+v_edge_color = getoptions(options, 'v_edge_color', 'r-');
 
 colorfx = getoptions(options, 'colorfx', 'none');
 if strcmp(colorfx, 'wrapping')
@@ -45,8 +46,8 @@ end
 options.face_vertex_color = col;
 clf;
 hold on;
-h = plot_mesh(vertex, faces, options);
-%set(h, 'edgecolor', 'none');
+plot_mesh(vertex, faces, options);
+
 for i=1:length(paths)
     path = paths{i};
     if not(isempty(path))
@@ -73,7 +74,7 @@ end
 for i=1:size(ve,2)
     h = plot3( [ve(1,i) ve(4,i)], ...
         [ve(2,i) ve(5,i)], ...
-        [ve(3,i) ve(6,i)], 'r');
+        [ve(3,i) ve(6,i)], v_edge_color);
     set(h, 'LineWidth', lw);
 end
 hold off;
