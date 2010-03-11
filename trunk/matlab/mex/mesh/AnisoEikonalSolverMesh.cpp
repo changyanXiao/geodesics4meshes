@@ -47,25 +47,16 @@ void mexFunction(	int nlhs, mxArray *plhs[],
 	//==================================================================	
 	// arg 6 and 7 : if initial distance values at source points are given
     // In this case, provide the intial voronoi indices as well
-	if(nrhs==6)
-        mexErrMsgTxt("5 or 7 argumets required");
-    if( nrhs==7 )
-	{
-		U_ini_seeds = mxGetPr(prhs[5]);
-        V_ini_seeds = mxGetPr(prhs[6]);
-		if( mxGetM(prhs[5])==0 && mxGetN(prhs[5])==0 )
-			U_ini_seeds=NULL;
-        if( mxGetM(prhs[6])==0 && mxGetN(prhs[6])==0 )
-			V_ini_seeds=NULL;
-		if( U_ini_seeds!=NULL && (mxGetM(prhs[5])!=nstart || mxGetN(prhs[5])!=1) )
-			mexErrMsgTxt("values must be of size nb_start_points x 1."); 
-        if( V_ini_seeds!=NULL && (mxGetM(prhs[6])!=nstart || mxGetN(prhs[6])!=1) )
-			mexErrMsgTxt("values must be of size nb_start_points x 1.");
-	}
-	else{
-		U_ini_seeds = NULL;
-        V_ini_seeds = NULL;
-	}
+	U_ini_seeds = mxGetPr(prhs[5]);
+    V_ini_seeds = mxGetPr(prhs[6]);
+	if( mxGetM(prhs[5])==0 && mxGetN(prhs[5])==0 )
+		U_ini_seeds=NULL;
+	if( mxGetM(prhs[6])==0 && mxGetN(prhs[6])==0 )
+		V_ini_seeds=NULL;
+	if( U_ini_seeds!=NULL && (mxGetM(prhs[5])!=nstart || mxGetN(prhs[5])!=1) )
+        mexErrMsgTxt("values must be of size nb_start_points x 1."); 
+	if( V_ini_seeds!=NULL && (mxGetM(prhs[6])!=nstart || mxGetN(prhs[6])!=1) )
+		mexErrMsgTxt("values must be of size nb_start_points x 1.");
 	//==================================================================
 	// arg 8 : boolean array for region to update
     doUpdate = (bool*) mxGetPr(prhs[7]);

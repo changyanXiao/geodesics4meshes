@@ -12,12 +12,13 @@ function [U,V,Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T
 %
 %   vertex, faces: a 3D mesh
 %   start_points(i) is the index of the ith starting point.
-%
+%   
+%   T : metric tensor
 %   U is the distance function to the set of starting points.
 %   V is the index of the closest source point. It provide a Voronoi
 %   decomposition of the domain.
-%   dUx, dUy and dUz provides the direction of characteristics (namely geodesics directions)
-%   Optional:
+%   Calls is incremented
+%
 %   - You can provide special Initial values of the geodesic distance at
 %   the source points conditions for stop in options : 
 %       'options.U_ini_seeds' : initial U values at seed points
@@ -46,17 +47,20 @@ if size(faces,1)>size(faces,2)
 end
 start_points = start_points(:);
 
+doUpdate = true(size(vertex));
+doUpdate = getoptions(options, 'doUpdate', doUpdate);
+
 % use fast C-coded version if possible
 if exist('perform_front_propagation_2d', 'file')~=0
     if(isempty(U_ini))
         [U,V] = AnisoEikonalSolverMesh(Calls, vertex-1, faces-1, T, start_points-1,...
-                                       U_ini_seeds, V_ini_seeds);
+                                       U_ini_seeds, V_ini_seeds, doUpdate);
         V = V+1;
         Calls = Calls + 1;
     else
         V_ini = V_ini-1;
         AnisoEikonalSolverMesh(Calls, vertex-1, faces-1, T, start_points-1, ...
-                               U_ini_seeds, V_ini_seeds, U_ini, V_ini);
+                               U_ini_seeds, V_ini_seeds, doUpdate, U_ini, V_ini);
         V = V_ini+1;
         U = U_ini;
         Calls = Calls + 1;
