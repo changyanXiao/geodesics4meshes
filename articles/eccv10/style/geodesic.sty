@@ -1,0 +1,112 @@
+
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{color}
+
+% \usepackage{hyperref}
+
+\newcommand{\RM}  {Riemannian manifold\;}
+\newcommand{\RMs}  {Riemannian manifolds\;}
+\newcommand{\INIT}  {\textbf{Initialization:}}
+\newcommand{\M}{\ensuremath{\Mm}}
+\newcommand{\Md}{M}
+\newcommand{\gga}{\ga}
+\definecolor{gray}{gray}{0.6}
+\newtheorem{Theo}{Theoreme}[chapter]
+\newtheorem{Prop}{Proposition}[chapter]
+\newtheorem{Lemme}{Lemna}[chapter]
+\newtheorem{Def}{Definition}[chapter]
+\newtheorem{demo}{Proof}[chapter]
+\DeclareGraphicsRule{.pdftex}{pdf}{.pdftex}{}
+
+
+
+% for the display of algorithms
+\usepackage[ruled,vlined]{style/algorithm2e}
+\usepackage{float}
+\floatstyle{boxed}
+\floatstyle{ruled}
+\newfloat{listing}{H}{loi}
+\floatname{listing}{Table}
+\newcommand{\algstep}[1]{\noindent{\bf{#1:}}}
+
+% \usepackage{algorithm}
+% \usepackage{algorithmic}
+
+\newcommand{\gab}[1]{ \noindent\textbf{\textit{Gabriel:}} \textbf{#1} }
+\newcommand{\mic}[1]{ \noindent\textbf{\textit{Mickael:}} \textbf{#1} }
+\newcommand{\laurent}[1]{ \noindent\textbf{\textit{Laurent:}} \textbf{#1} }
+\newcommand{\renaud}[1]{ \noindent\textbf{\textit{Renaud:}} \textbf{#1} }
+
+% name for the domain of RM
+\newcommand{\manif}{\Om}
+% name for a surface
+\newcommand{\surf}{\Ss}
+% tangent plane of a surface
+\newcommand{\tangentPlane}{\Tt}
+% length of a curve
+\newcommand{\length}{L}
+% set of curves joining two points
+\newcommand{\joining}{\Pp}
+% norm according to some metric
+\newcommand{\normT}[2]{\norm{#1}_{#2}}
+\newcommand{\dotpT}[3]{\langle #1,\,#2\rangle_{#3}}
+% tensor field indexed by position
+\newcommand{\tensor}[1]{T_{#1}}
+% medial axis 
+\DeclareMathOperator{\MedAxis}{MedAxis}
+% starting points for the distance
+\newcommand{\startP}{S}
+% FM variables
+\newcommand{\FMstate}{\Sigma}
+%\DeclareMathOperator{\FMupdate}{Update}
+%\DeclareMathOperator{\FMupdatediscr}{Updatediscr}
+\newcommand{\FMupdate}{\Gamma}
+\newcommand{\FMupdatediscr}{\Gamma}
+% Ball for the Eikonal discretization
+%\newcommand{\neigheps}{B_{\epsilon}}
+\newcommand{\neigheps}{B}
+\newcommand{\neighepsdiscr}{B_\epsilon}
+% Grid index and points
+\global\let\@ij\@empty
+\global\let\ij\relax
+\newcommand{\ii}[1]{#1_{i}}
+\newcommand{\ij}[1]{#1_{i,j}}
+\newcommand{\xij}{\ij{x}}
+\newcommand{\xii}{\ii{x}}
+\newcommand{\uij}{\ij{u}}
+\newcommand{\uii}{\ii{u}}
+% triangulation
+\newcommand{\faces}{\Ff}
+\newcommand{\verts}{\Vv}
+\newcommand{\Triangle}{t}
+% tangent plane
+\newcommand{\tangentP}{\Tt}
+% One ring around a vertex
+\DeclareMathOperator{\oneRing}{Neigh}
+% iterations for algorithms
+\newcommand{\uit}[1]{u^{(#1)}}
+% tolerance for algorithms
+\newcommand{\tol}{\eta}
+% for adaptive GS algo
+\newcommand{\gstack}{\Qq}
+
+% starting point
+\newcommand{\istart}{s}
+\newcommand{\xstart}{x_{\istart}}
+% ending point
+\newcommand{\iend}{e}
+\newcommand{\xend}{x_{\iend}}
+
+% tensor fields
+\newcommand{\firstFF}{I}
+\newcommand{\secdFF}{J}
+\newcommand{\hessian}{H}
+
+
+% voronoi segmentation
+\newcommand{\voronoi}{\Vv}
+% double points
+\newcommand{\delaunay}{\Dd}
+% tripple points
+\newcommand{\delaunayF}{\Tt}

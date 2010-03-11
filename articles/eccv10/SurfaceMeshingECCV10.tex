@@ -1,0 +1,192 @@
+\documentclass[runningheads]{style/llncs}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb} % define this before the line numbering.
+\usepackage{lineno}
+\usepackage{color}
+
+\usepackage{style/gpeyre}
+\usepackage{style/geodesic}
+\usepackage{url}
+
+
+\usepackage{epsfig}
+\usepackage{epstopdf}
+
+\DeclareGraphicsExtensions{.png,.pdf,.eps,.jpg} 
+\graphicspath{{./images/}}
+
+
+\newcommand{\ecc}{\text{E}}
+% distortion of mapping
+\newcommand{\distF}{\de}
+% distance between shapes
+\newcommand{\distS}{\De}
+
+\def\ie{{\em {i.e.}~}}
+\def\eg{{\em {e.g.}~}}
+\def\etc{{\em {etc}~}}
+\def\etal{{\em {et al.}~}}
+
+\usepackage{subfigure}
+% \usepackage[english]{babel}
+% \usepackage{latexsym}
+% \usepackage[T1]{fontenc}
+% \usepackage{hyperref}
+
+\begin{document}
+\renewcommand\thelinenumber{\color[rgb]{0.2,0.5,0.8}\normalfont\sffamily\scriptsize\arabic{linenumber}\color[rgb]{0,0,0}}
+\renewcommand\makeLineNumber {\hss\thelinenumber\ \hspace{6mm} \rlap{\hskip\textwidth\ \hspace{6.5mm}\thelinenumber}} 
+\linenumbers
+\pagestyle{headings}
+\mainmatter
+\def\ECCV10SubNumber{***}  % Insert your submission number here
+
+\title{Anisotropic Geodesic Remeshing} % Replace with your title
+
+\titlerunning{Anisotropic Geodesic Remeshing}
+
+\authorrunning{Paper ID \ECCV10SubNumber}
+
+\author{Anonymous ECCV submission}
+\institute{Paper ID \ECCV10SubNumber}
+
+
+\maketitle
+
+\begin{abstract}
+	This paper presents a new method for the anisotropic remeshing of 3D surfaces.
+	Starting from an densely sampled 3D mesh, the method build a curvature dependent 
+	tensor field, which defines a Riemannian metric that drives the seeding of triangles.
+	The core of the algorithm is a interleaving of geodesic farthest point seeding and 
+	a geodesic Lloyd relaxation. This allows for a high quality placement of points according to the metric, 
+	and the estimation of an anisotropic geodesic Delaunay triangulation.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+This paper tackles the difficult problem of meshing a surface with anisotropic triangles. 
+Both the density and anisotropic of the triangles should be adapted to capture the complex regularity of 
+a 3D surface. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Previous Works}
+
+%%
+\paragraph{Isotropic meshing.}
+
+%%
+\paragraph{Anisotropic planar domain meshing.}
+
+Optimal shape of triangles to approximation a smooth function.
+
+%%
+\paragraph{Anisotropic surface meshing.}
+
+Optimal shape to approximate a smooth surface according to the Hausdorf metric.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Contributions}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Geodesic Computations on Surfaces}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Surfaces as Riemannian Manifolds}
+
+We consider here a smooth
+surface $\surf \subset \RR^3$ embedded into the 3D Euclidean space.
+
+To define the length of a curve drawn on the surface, a tensor $\tensor{x} \in \RR^{3 \times 3}$ is attached to 
+each point $x \in \surf$. This tensor allows one to compute the length of a vector according to 
+\eq{
+	\normT{u}{\tensor{x}}^2 =  \dotpT{u}{u}{\tensor{x}}
+	\qwhereq
+	\dotpT{u}{v}{\tensor{x}} = 
+	\dotp{\tensor{x} u}{v} = \sum_{1 \leq i,j \leq d} (\tensor{x})_{i,j} u_i v_j.
+}
+Since this tensor is intended to measure length of tangent to curves traced on the surface, it is assumed to be vanishing on the normal direction $n_x$ at $x$, which means $\normT{u}{\tensor{x}} = 0$.
+
+The length of a curve $\ga : [0,1] \rightarrow \surf$ traced on the surface is then defined as
+\eql{\label{eq-length-surf-embedding} 
+	\length(\ga) = \int_0^1
+  		\normT{\ga'(t)}{\tensor{\ga(t)}} \d t, 		} 
+where $\ga'(t) \in \tangentPlane_{\ga(t)} \subset \RR^3$ is the derivative vector, 
+that lies in the embedding space $\RR^3$,
+and is in fact a vector belonging to the 2D tangent plane $\tangentPlane_{\ga(t)}$ to the surface at
+$\ga(t)$.
+
+The geodesic distance between two points $\xstart,\xend \in \surf$ is the length of the shortest curve joining the two points 
+\eql{\label{eq-dfn-geodesic-dist}
+	d(\xstart,\xend) = \umin{\ga \in \joining(\xstart,\xend)} \length(\ga)
+}
+where we use the following set of piecewise smooth curves 
+\eq{
+	\joining(\xstart,\xend) = \enscond{\ga : [0,1] \rightarrow \surf}{\ga(0)=\xstart, \ga(1)=\xend}.
+}
+A curve $\ga^\star$ satisfying $d(\xstart,\xend) = \length(\ga^\star)$ is called a shortest path, sometimes also referred to as a (globally minimizing) geodesic.
+
+
+\myfigure{ 
+\tabdeux{
+\image{0.4}{metric/metric-surface}&
+\image{0.4}{metric/geodesic-surface}\\
+Surface $\surf$ & Geodesic distance and paths.
+}
+}{
+Example of geodesic curves on a 3D surface. The color display the function $x \mapsto d(\xstart,\xend)$ 
+and the curves are geodesics between a single $\xstart$ and several $\xend$.% 
+}{fig-geodesics-surface} 
+
+Figure \ref{fig-geodesics-surface} shows an example of a 3D surface, together with the geodesic distance to $\xstart$ and several geodesic curves.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Eikonal Equation and Geodesics}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Numerical Computation of Geodesics on Surfaces}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Geodesic Farthest Point Sampling}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Geodesic Lloyd Relaxation}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Conclusion}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{style/splncs}
+
+
+\bibliography{bib/bib-abbrev,bib/bib-books,bib/bib-fast-marching,bib/bib-maths,bib/bib-meshes,bib/bib-sampling}
+
+
+
+\end{document}
