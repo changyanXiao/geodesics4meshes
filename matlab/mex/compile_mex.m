@@ -4,6 +4,12 @@
 disp('Compiling anisoVoronoi2Diterative.');
 mex grid/anisoVoronoi2Diterative.cpp
 
+%%
+% Code Domain meshing.
+
+disp('Compiling anisoFPMeshing2Diterative.');
+mex domain/anisoFPMeshing2Diterative.cpp
+
 
 %%
 % Code on mesh grid.
