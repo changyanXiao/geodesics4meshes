@@ -45,10 +45,28 @@ options.doUpdate = true(n,1);
 % Compute distance to seeds with overlap
 ULoc = zeros(n,m);
 for i=1:m
-    [ULoc(:,i), Calls] = perform_geodesic_computation_extended(Calls, vertex, faces, W, T, U, V, i, Vext);
+    if 0
+        %% FETH CODE - BUG ?%%
+        [ULoc(:,i), Calls] = perform_geodesic_computation_extended(Calls, vertex, faces, W, T, U, V, i, Vext);
+    else
+        %% BRUTE FORCE CODE %%
+        % extend neighboorhood
+        v = double(V==i);
+        for iext=1:Vext
+            v = W*v;
+        end
+        v = v>0;
+        % perform propagation on the enlarged region
+        options.doUpdate = v;
+        options.U_ini = []; % zeros(n,1);
+        options.V_ini = []; % ones(n,1);
+        [ULoc(:,i), Vloc, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, landmarks(i), options);
+        ULoc(v==0,i) = Inf;        
+    end
 end
-
 Uland = min(ULoc,[],2);
+
+
 
 % Compute Voronoi boundaries.
 

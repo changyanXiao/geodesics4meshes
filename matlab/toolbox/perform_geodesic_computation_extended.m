@@ -44,9 +44,9 @@ V_ini_seeds = V(seed);
 options.U_ini_seeds = U_ini_seeds;
 options.V_ini_seeds = V_ini_seeds;
 
-tic
+% tic
 [UU, V1, Calls] = perform_Aniso_Eikonal_Solver_mesh(Calls, vertex, faces, T, seed, options);
-toc
+% toc
 UU(~v) = 0;
 clear V1;
 return;
