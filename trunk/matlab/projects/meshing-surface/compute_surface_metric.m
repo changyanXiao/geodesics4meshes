@@ -1,8 +1,8 @@
-function T = compute_surface_metric(vertex,faces, metric_type, options)
+function [T,Umin,Umax] = compute_surface_metric(vertex,faces, metric_type, options)
 
 % compute_surface_metric - compute a tensor metric for meshes.
 %
-%   T = compute_surface_metric(vertex,faces, metric_type, options);
+%   [T,Umin,Umax] = compute_surface_metric(vertex,faces, metric_type, options);
 %
 %   It is a curvature-based metric.
 %
@@ -29,12 +29,15 @@ switch metric_type
         A = A*0+1;
 %        E = perform_hist_eq(A, 'linear');
 %        E = rescale(E,1,10);
+    case 'isotropic-boost'
+        A = A*0+1;
+        E = E.^1.5;
     case 'constant'
         A = A*0+1;
         E = E*0+1; 
     case 'anisotropic'
-%        E = E*0+1;
-%        A = A*0+100;
+    case 'anisotropic-boost'
+        A = A*4;
     otherwise
         error('Unknown metric type.');
 end
