@@ -8,13 +8,13 @@ path(path, '../../data/meshes-large/');
 save_eps = 0;
 save_png = 1;
 
-%if not(exist('metric_type'))
+if not(exist('metric_type'))
 metric_type = 'isotropic';
 metric_type = 'constant';
 metric_type = 'anisotropic';
 metric_type = 'isotropic-boost';
 metric_type = 'anisotropic-boost';
-%end
+end
 
 rep = ['../../results/meshing-surface/' metric_type '/'];
 if not(exist(rep))

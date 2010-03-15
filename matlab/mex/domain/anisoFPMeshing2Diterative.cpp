@@ -99,7 +99,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   //==================================================================
   resize();
   dims[0] = Nx-2; dims[1] = Ny-2;
-  if (nrhs >= 3)
+  if (nrhs >= 4)
     {
       mxSetDimensions(plhs[0], dims, 2);
       mxSetDimensions(plhs[1], dims, 2);

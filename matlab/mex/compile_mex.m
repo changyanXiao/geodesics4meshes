@@ -10,6 +10,17 @@ mex grid/anisoVoronoi2Diterative.cpp
 disp('Compiling anisoFPMeshing2Diterative.');
 mex domain/anisoFPMeshing2Diterative.cpp
 
+%% 
+% Code FM isotropic 
+
+mex fast-marching/perform_front_propagation_2d.cpp fast-marching/perform_front_propagation_2d_mex.cpp fast-marching/fheap/fib.cpp 
+mex fast-marching/perform_front_propagation_3d.cpp fast-marching/perform_front_propagation_3d_mex.cpp  fast-marching/fheap/fib.cpp 
+
+
+%%
+% Code skeleton.
+
+mex skeleton/skeleton.cpp
 
 %%
 % Code on mesh grid.
