@@ -8,6 +8,17 @@ P = imread('sala.png');
 n = size(P,1);
 m = size(P,2);
 
+n = 300;
+M = rescale(load_image('sala',n));
+M = perform_blurring(M,5)>.5;
+M = conv2(double(M), ones(3), 'same')>0;
+P = double(M);
+
+
+n = size(P,1);
+m = size(P,2);
+
+
 % SE = strel('square',3);
 % P = imopen(P,SE);    % IMPORTANT : le bord du domaine doit pouvoir s'extraire en 4-conexité
 

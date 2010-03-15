@@ -535,9 +535,6 @@ int findBoundaryMaxPointSecond(std::queue<BEdge*> &q)
       if (beit->second->mark == false && 
 	  v != beit->second->label1 && v != beit->second->label2)
 	{
-	  int x, y;
-	  pos_to_point(point, x, y);
-	  pos_to_point(beit->second->pmax, x, y);
 	  beit->second->mark = true;
 	  q.push(beit->second);
 	  nb_edges--;
@@ -1061,8 +1058,8 @@ void initializeFPM()
 int findMax(double umax = 0)
 //================================================================
 {
-  int pmax, point, Point;
-  double umx, utmp;
+  int pmax = -1, point, Point;
+  double utmp;
   short q;
   for (Point = 0; Point < nxny; Point++)
     {
@@ -1070,9 +1067,9 @@ int findMax(double umax = 0)
       q = Q[point];
       if (q == kBorder || q == kSeed) continue;
       utmp = UInit[Point];
-      if (utmp > umx)
+      if (utmp > umax)
 	{
-	  umx = utmp;
+	  umax = utmp;
 	  pmax = point;
 	}
     }
@@ -1080,34 +1077,38 @@ int findMax(double umax = 0)
 }
 
 //================================================================
-void addSeedInterior(const int &point, const int &label, 
-		     double *UComp, int *VComp)
+void addSeedInterior(const int &point, int label)
 //
 //================================================================
 {
   // add it as a seed
-  int Point, k, npoint;
-  short q;
-  Point = comp_to_real(point);
+  int Point = comp_to_real(point), k, npoint;
   //--------------------------------------------------------
   // update maps
   Q[point] = kSeed;
-  UComp[Point] = 0.0;
-  VComp[Point] = label;
+  UInit[Point] = 0.0;
+  VInit[Point] = label;
   Seeds[Point] = label;
-  //std::cerr << "add seed label " << label << std::endl;
+//  std::cerr << "add seed label " << label << std::endl;
   //--------------------------------------------------------
   // initialize neighbors
   for (k = 0; k < connectivity_large; k++)
     {
       npoint = point + NeighborhoodLarge[k];
-      q = Q[npoint];
-      if (q == kUnqueuedEstimated)
+      if (Q[npoint] == kUnqueuedEstimated)
 	{
 	  waiting_Points.push(npoint);
 	  Q[npoint] = kEnqueuedEstimated;
 	}
     }
+}
+
+//================================================================
+template<class T>
+void cpy(T *m1, T *m2)
+//================================================================
+{
+  for (int i = 0; i < nxny; i++) m1[i] = m2[i];
 }
 
 //================================================================
@@ -1117,15 +1118,13 @@ void gridFPM(int nb_seeds)
   initializeFPM();
   // to compute interior seeds
   double *UComp = new double[nxny];
-  std::memcpy(UComp, UInit, sizeof(double)*nxny);
   int *VComp = new int[nxny];
-  std::memcpy(VComp, VInit, sizeof(int)*nxny);
   std::vector<BEdge*>::iterator eit, eend;
   int pmax;
   BEdge* e = NULL;
   while (nb_seeds > 0)
     {
-      // add the max as a new seed
+      // find max
       pmax = findMax();
       e = isBounbdaryPoint(pmax);
       if (e)
@@ -1134,23 +1133,27 @@ void gridFPM(int nb_seeds)
 	  addBoundarySeed(e);
 	  GaussSiedelIterateBoundary();
 	  nb_seeds--;
-	  eit = BEMap->begin();
 	  eend = BEMap->end();
-	  for (; eit != eend; eit++) (*eit)->mark = false;
+	  for (eit = BEMap->begin(); eit != eend; eit++) (*eit)->mark = false;
 	  // save data
-	  std::memcpy(UComp, UInit, sizeof(double)*nxny);
-	  std::memcpy(VComp, VInit, sizeof(int)*nxny);
+	  //std::memcpy(UComp, UInit, sizeof(double)*nxny);
+	  //std::memcpy(VComp, VInit, sizeof(int)*nxny);
 	  continue;
 	}
-      addSeedInterior(pmax, labels+1, UInit, VInit);
+      // save data
+      cpy(UComp, UInit);
+      cpy(VComp, VInit);
+      // insert max as a new seed
+      addSeedInterior(pmax, labels+1);
       GaussSiedelIterateVoronoi();//GaussSiedelIterateInterior(UComp, VComp);
-      
       // check boundary
       std::queue<BEdge*> q;
       if (findBoundaryMaxPointSecond(q)) // border intersect new Voronoi cell
 	{
-	  std::memcpy(UInit, UComp, sizeof(double)*nxny);
-	  std::memcpy(VInit, VComp, sizeof(int)*nxny);
+	  //std::memcpy(UInit, UComp, sizeof(double)*nxny);
+	  //std::memcpy(VInit, VComp, sizeof(int)*nxny);
+	  cpy(VInit, VComp);
+	  cpy(UInit, UComp);
 	  Q[pmax] = kUnqueuedEstimated;
 	  Seeds[comp_to_real(pmax)] = 0;
 	  //std::cerr << "detected" << std::endl;
@@ -1163,21 +1166,16 @@ void gridFPM(int nb_seeds)
 		  q.pop();
 		}
 	      GaussSiedelIterateBoundary();
-	      eit = BEMap->begin();
 	      eend = BEMap->end();
-	      for (; eit != eend; eit++) (*eit)->mark = false;
-	      
+	      for (eit = BEMap->begin(); eit != eend; eit++) (*eit)->mark = false;
+	      //break;
 	    } while (findBoundaryMaxPointSecond(q));
-	  
 	}
       else
 	{
 	  labels++;
 	  nb_seeds--;
 	}
-      // save data
-      std::memcpy(UComp, UInit, sizeof(double)*nxny);
-      std::memcpy(VComp, VInit, sizeof(int)*nxny);  
     }
   delete[] UComp;
   delete[] VComp;

@@ -21,25 +21,19 @@ M = double(M);
 % Building tensor field.
 
 options.niter = 500;
-H = compute_tensor_domain(M,options);
+H = compute_tensor_domain(M,'anisotropic',options);
 
 %%
-% Enforce anisotropy
+% Perform sampling.
 
-[e1,e2,l1,l2] = perform_tensor_decomp(H);
-a = l1+l2;
-% l1 = l1./a; l2 = l2./a;
-l1 = l1*0+5;
-l2 = l2*0+1;
-l1(M==0) = 0;
-l2(M==0) = 0;
-H1 = perform_tensor_decomp(e1,e2,l1,l2);
 
 %%
-% Compute tensor eigendecomp.
+% Display.
 
-options.sub = round(n/40);
-clf;
-plot_tensor_field(H1,1-M, options);
-saveas(gcf, [rep name '-metric.png'], 'png');
+if strcmp(metric_type, 'anisotropic')
+    options.sub = round(n/40);
+    clf;
+    plot_tensor_field(H,1-M, options);
+    saveas(gcf, [rep name '-metric.png'], 'png');
+end
 saveas(gcf, [rep name '-metric.eps'], 'epsc');

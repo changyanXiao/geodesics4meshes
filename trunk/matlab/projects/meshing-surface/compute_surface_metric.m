@@ -37,7 +37,7 @@ switch metric_type
         E = E*0+1; 
     case 'anisotropic'
     case 'anisotropic-boost'
-        A = A*4;
+        A = A*2;
     otherwise
         error('Unknown metric type.');
 end
