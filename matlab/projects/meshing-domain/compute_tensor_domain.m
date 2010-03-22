@@ -37,36 +37,29 @@ return;
 function H = compute_tensor_domain_iso(M,metric_type,options)
 
 options.null = 0;
-aniso = getoptions(options, 'isoratio', 5);
-niter = getoptions(options, 'niter', 1000);
-verb = getoptions(options, 'verb', 1);
+isoK = getoptions(options, 'isoK', 1);
+isoratio = getoptions(options, 'isoratio', []);
 n = size(M,1);
 
+%% Compute the LFS
+[SK,DT,LFS] = compute_skeleton(M, 100);
+B = conv2(M, ones(3)/9, 'same')<.999 & M==1;
+[x,y] = ind2sub(size(M), find(B));
+pstart = [x(:)'; y(:)'];
+options.values = LFS(pstart(1,:) + (pstart(2,:)-1)*n)'/isoK;
+options.values = max(options.values, mean(options.values)*.4);
+SF = perform_fast_marching(ones(n), pstart, options)*isoK;
 
-B = find(conv2(M, ones(3)/9, 'same')<.999 & M==1);
-
-%%
-% compute curvature
-
-T0 = M;
-T0 = perform_blurring(T0, 10);
-T0 = perform_blurring(T0, 10);
-T0 = perform_blurring(T0, 10);
-
-T = zeros(n) + mean(T0(B));
-sel1 = [2:n n]; sel2 = [1 1:n-1];
-for i=1:niter
-    if verb
-        progressbar(i,niter);    
-    end
-    T = ( T+T(sel1,:,:)+T(sel2,:,:)+T(:,sel1,:)+T(:,sel2,:) )/5;
-    T(B) = T0(B);
+if not(isempty(isoratio))
+    SF = rescale(SF,1,isoratio);
 end
 
-T = rescale(T, 1, isoratio);
+SF = double(1./SF);
+
+% SF(M==0) = 0;
 H = zeros(n,n,2,2);
-H(:,:,1,1) = t.^2;
-H(:,:,2,2) = t.^2;
+H(:,:,1,1) = SF.^2;
+H(:,:,2,2) = SF.^2;
 
 return;
 
