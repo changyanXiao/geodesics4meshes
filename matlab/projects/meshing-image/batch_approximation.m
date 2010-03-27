@@ -11,7 +11,7 @@ metric = 'structure';
 
 use_lloyd = 1;
 epsilon = 1;
-ntests = 5;
+ntests = 4;
 alpha_list = linspace(1.5,1.5,ntests);
 sigma_list = linspace(2,12,ntests)*n/512;
 err = [];
