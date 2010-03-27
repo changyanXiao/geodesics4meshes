@@ -2,46 +2,29 @@
 
 add_base_paths;
 
-rep = ['../../results/image-approx/'];
+default rep = ['../../results/image-approx/'];
 if not(exist(rep))
     mkdir(rep);
 end
 
-if not(exist('metric'))
-metric = 'hessian';
-metric = 'structure';
-end
-
-if not(exist('use_lloyd'))
-    use_lloyd = 0;
-end
-lloyd_refresh = 10;
-
-% NL mapping parameters of the metric.
-
-if not(exist('epsilon'))
-    epsilon = 1;
-end
-if not(exist('alpha'))
-    alpha = 1;
-end
-if not(exist('sigma_structure'))
-    sigma_structure = 6*n/512;
-end
+default metric = ['structure'];
+default use_lloyd = 0;
+default lloyd_refresh = 10;
+default m = 800;    % number of vertices
+default n = 256/2;  % size of the image
+default epsilon = 1; 
+default alpha = 1;
+default sigma_structure = 6*n/512;
+default displist = [100 200 400 m]; 
 
 %%
 % Load an image.
 
-if not(exist('name'))
-    name = 'boat';
-end
-if not(exist('n'))
-    n = 256/2;
-end
+default name = 'boat';
 M = load_image(name,n);
+M = rescale(sum(M,3));
 
 str = [name '-' metric '-alpha' num2str(alpha)];
-
 
 %%
 % Compute the metric.
@@ -63,18 +46,13 @@ T = perform_tensor_decomp(e1,e2,l1,l2);
 
 vertex = [[1;1] [1;n] [n;1] [n;n]]; 
 m0 = size(vertex,2);
-m = 800;
 U = zeros(n);
 V = int32(zeros(n)); S = int32(zeros(n));
 S(vertex(1,:) + (vertex(2,:)-1)*n) = 1:size(vertex,2);
 % initialize the map
 [U,V,dUx, dUy] = anisoVoronoi2Diterative(T,S);
 
-if not(exist('displist'))
-    displist = [100 200 400 m]; 
-end
 k = 1;
-
 progressbar(1,m);
 for i=m0+1:m
     progressbar(i,m);
@@ -142,10 +120,10 @@ for i=m0+1:m
         plot_graph(triangulation2adjacency(faces),vertex, options);
         saveas(gcf, [rep mode '-appr-' num2str(i) '.eps'], 'epsc');
         saveas(gcf, [rep mode '-appr-' num2str(i) '.png'], 'png');
-        end
         warning off;
         imwrite(rescale(M1), [rep mode '-appr0-' num2str(i) '.png'], 'png');
         warning on;
+        end
         %
         k = k+1;
     end
