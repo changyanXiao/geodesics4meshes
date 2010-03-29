@@ -1,66 +1,45 @@
-displist = [];
+%% batch for several images, using well chosen parameters (alpha,sigma)
+
+name_list = {'boat' 'game' 'piecewise-quadratic'};
+% name_list = {'piecewise-quadratic'};
 
 
-name = 'boat';
-n = 256;
-% nbr vertex    
-m = 600;
-
-metric = 'hessian';
-metric = 'structure';
-
-use_lloyd = 1;
-epsilon = 1;
-ntests = 4;
-alpha_list = linspace(1.5,1.5,ntests);
-sigma_list = linspace(2,12,ntests)*n/512;
-err = [];
-
-rep = ['../../results/image-approx/' name '/'];
+rep = ['../../results/image-approx/svg/'];
 if not(exist(rep))
     mkdir(rep);
 end
 
-faces_svg = {};
-vertex_svg = {};
-for ialpha=1:ntests
-    alpha = alpha_list(ialpha);
-    sigma_structure = sigma_list(ialpha);
+% - Boat avec 7000 sommets (PSNR: 31.83 dB)
+% - Game avec 6000 sommets (PSNR: 36.54 dB)
+% - PiecewiseQuadratic avec 800 sommets (PSNR: 42.85 dB)
+
+n = 256*2;
+metric = 'structure';
+use_lloyd = 1;
+lloyd_refresh = 100;
+displist = [];
+
+
+mlist = round([7000 6000 800]);
+alpha_list = [1.6 1.6 3];
+sigma_list = [4 4 8]*n/512;
+epsilon_list = [1e-3 1e-3 1e-3];
+
+for iname = 1:length(name_list)
+    
+    
+    epsilon = epsilon_list(iname);
+    alpha = alpha_list(iname);
+    sigma_structure = sigma_list(iname);
+
+    name = name_list{iname};
+    m = mlist(iname);
     test_approximation;
-    err(end+1) = snr(M,M1);
-    %%
-    % Display
-    if 0
-        options.col = 'b-'; options.ms = 0; options.ps = 1;
-        clf; hold on;
-        imageplot(M);        
-        plot_graph(triangulation2adjacency(faces),vertex(2:-1:1,:), options);
-        h = plot([1 n n 1 1], [1 1 n n 1], 'b.-');
-        set(h, 'LineWidth', 1);
-        axis ij;
-        saveas(gcf, [rep name '-m' num2str num2str(alpha)]);
-    end
-    faces_svg{end+1} = faces;
-    vertex_svg{end+1} = vertex;
+    % save image
+    warning off;
+    imwrite(clamp(M1), [rep name '-approx-m' num2str(m) '.png'], 'png');
+    warning on;
+    % save triangulation
+    write_off([rep name '-m' num2str(m) '-triangles-m' num2str(m)  '.off'], [vertex; zeros(1,m)], faces);
+    disp([name ', PSNR:' num2str(psnr(M,M1), 3) 'dB']);
 end
-
-str_add = '';
-clf;
-if std(alpha_list)>0
-    h = plot(alpha_list,err, '.-');
-    title('alpha variation');
-    str_add = 'alpha';
-else
-    h = plot(alpha_list,err, '.-');
-    title('sigma variation');
-    str_add = 'sigma';
-end
-set(h, 'LineWidth', 2);
-axis tight;
-saveas(gcf, [rep name '-m' num2str(m) '-' metric '-lloyd' num2str(use_lloyd) '-' str_add '.png'], 'png');
-
-%% 
-% Record optimal triangulation.
-
-[tmp,i] = max(err);
-write_off([rep name '-m' num2str(m) '-' metric '-lloyd' num2str(use_lloyd) '.off'], [vertex_svg{i}; zeros(1,m)], faces_svg{i});
