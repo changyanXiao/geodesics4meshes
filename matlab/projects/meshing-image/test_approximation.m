@@ -32,11 +32,15 @@ options.bound = 'sym';
 switch metric
     case 'hessian'
         H = compute_hessian(M, options);
-        [e1,e2,l1,l2] = perform_tensor_decomp(H, 'abs');
+        % the absolute field
+        [e1,e2,l1,l2] = perform_tensor_decomp(H, 'abs');  
+        H = perform_tensor_decomp(e1,e2,abs(l1),abs(l2)); 
+        % blur the field
+        H = perform_blurring(H, sigma_structure);    
     case 'structure'
         H = compute_structure_tensor(M,1,sigma_structure);
-        [e2,e1,l1,l2] = perform_tensor_decomp(H, 'abs');
 end
+[e2,e1,l1,l2] = perform_tensor_decomp(H, 'abs');
 l1 = (abs(l1)+epsilon).^alpha;
 l2 = (abs(l2)+epsilon).^alpha;
 T = perform_tensor_decomp(e1,e2,l1,l2);
