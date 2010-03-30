@@ -7,11 +7,11 @@ default n = 256;
 % nbr vertex    
 default m = 800;
 
-metric = 'hessian';
 metric = 'structure';
+metric = 'hessian';
 displist = [];
 
-ntests = 6; 
+ntests = 8; 
 
 alpha_default = 1.6;
 epsilon_default = .1*1e-2;
@@ -20,20 +20,31 @@ sigma_default = 5*n/512;
 % default values
 switch name
     case 'boat'
+        % m=2000 SNR=20.6 pour alpha=1.6, epsilon=1e-3, sigma=6*n/512
         alpha_default = 1.6;
         epsilon_default = 1e-3;
         sigma_default = 8*n/512;
         alpha_list = linspace(1.4,2.2,ntests);
-        epsilon_list = linspace(1e-5,1e-3,ntests);
+        epsilon_list = linspace(1e-5,1.5*1e-3,ntests);
         sigma_list = linspace(4,20,ntests)*n/512;           
     case 'piecewise-quadratic'
-        % SNR 27 env
-        alpha_default = 2;
-        epsilon_default = .001;
-        sigma_default = 12*n/512; 
-        alpha_list = linspace(1.5,3.5,ntests);
-        epsilon_list = linspace(1e-5,1e-3,ntests);
-        sigma_list = linspace(4,20,ntests)*n/512;   
+        if strcmp(metric, 'structure')
+            % SNR 27 env, pour alpha=2, epsilon=1e-3, sigma=4*n/512
+            % SNR 30 env, pour alpha=3, epsilon=1e-3, sigma=4*n/512
+            alpha_default = 3;
+            epsilon_default = .001;
+            sigma_default = 4*n/512;
+            alpha_list = linspace(1.5,3.5,ntests);
+            epsilon_list = linspace(1e-5,1.5*1e-3,ntests);
+            sigma_list = linspace(0.5,4,ntests)*n/512;
+        else
+            alpha_default = 1;
+            epsilon_default = .001;
+            sigma_default = 4*n/512;
+            alpha_list = linspace(.8,1.5,ntests);
+            epsilon_list = linspace(1e-5,1e-2,ntests);
+            sigma_list = linspace(0.5,4,ntests)*n/512;
+        end
 end
 
 
