@@ -94,3 +94,8 @@ figure;
 plot_fast_marching_mesh(vertex,faces, double(V)-V_th, [], options);
 zoom(.7);
 title('start from each source and take the minimum:voronoi error');
+%%
+figure;
+plot_fast_marching_mesh(vertex,faces, abs(UU-U), [], options);
+zoom(.7);
+title('Diff computed distances');
