@@ -69,5 +69,7 @@ void mexFunction(	int nlhs, mxArray *plhs[],
     DELETEARRAY(ITER);
     DELETEARRAY(TAB);
     DELETEARRAY(U_n_D);
+    DELETEARRAY(Utmp);
+    DELETEARRAY(Vtmp);
     //==================================================================
 };

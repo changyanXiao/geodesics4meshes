@@ -61,6 +61,8 @@ double *U_n_D    = NULL;
 double *X1, *X2, *X12;
 #define faces_(k,i) faces[k+3*i]
 #define vertex_(k,i) vertex[k+3*i]
+double* Utmp     = NULL;
+short* Vtmp     = NULL;
 
 
 //================================================================
@@ -114,12 +116,14 @@ void InitializeArrays()
     //--------------------------------------------------------
     S      = new short[nverts];
     Q      = new short[nverts];
-    ITER   = new int[nverts];
+    ITER   = new int  [nverts];
     TAB    = new double[3];
     U_n_D  = new double[2];
     X1     = new double[3];
     X2     = new double[3];
     X12    = new double[3];
+    Utmp   = new double[nverts];
+    Vtmp   = new short [nverts];
     //--------------------------------------------------------
     if(given_u){
         for(x = 0; x < nverts; x++){
@@ -360,9 +364,6 @@ COMMENTS :
                 is_updated = true;
             }
         }
-        else{
-            
-        }
 	}
 	//--------------------------------------------------------------
 	if (is_updated){
@@ -375,6 +376,25 @@ COMMENTS :
 	}
     //--------------------------------------------------------------
 };
+
+//================================================================
+double GaussSeidelIterateVoronoi_sequential()
+//================================================================
+{
+    int point;
+    double error = 0;
+    for (point = 0; point < nverts; point++){
+        TsitsiklisUpdate(point, U_n_D);
+        Utmp[point] = U_n_D[0];
+        Vtmp[point] = (short) U_n_D[1];
+        error = MAX(error, fabs(U_n_D[0] - U[point]));
+    }
+    for (point = 0; point < nverts; point++){
+        U[point] = Utmp[point];
+        Vor[point] = Vtmp[point];
+    }
+    return error;
+}
 
 //================================================================
 void GaussSiedelIterate()
@@ -409,4 +429,14 @@ void GaussSiedelIterate()
             }
         }
 	}
+    //------------------------------------------------------------
+    // iterated sequential update until convergence
+    //------------------------------------------------------------
+    double error = GaussSeidelIterateVoronoi_sequential();
+    if(error > tol)
+        mexPrintf("Convergence condition not reached, Iterate until then !\n");
+    while (error > tol)
+    {
+        error = GaussSeidelIterateVoronoi_sequential();
+    } 
 };
