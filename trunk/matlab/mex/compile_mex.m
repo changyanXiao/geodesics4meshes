@@ -51,9 +51,9 @@ for i=1:length(files)
 end
 eval(str);
 
-%%
+%% Connectivity matlab
 basep = 'mesh/';
-disp('Compiling connectivity, might time some time.');
+disp('Compiling ComputeMeshConnectivity, might time some time.');
 files =  { ...
     'ComputeMeshConnectivity.cpp', ...
     'gw/gw_core/GW_Config.cpp',           ...
@@ -77,3 +77,15 @@ for i=1:length(files)
     str = [str basep files{i} ' '];
 end
 eval(str)
+%% Code on mesh grid with matlab connectivity
+basep = 'mesh/';
+disp('Compiling AnisoEikonalSolverMatlabMesh, might take no time :-P.');
+files =  { ...
+    'AnisoEikonalSolverMatlabMesh.cpp'
+
+};
+str = 'mex '; % -v
+for i=1:length(files)
+    str = [str basep files{i} ' '];
+end
+eval(str);
