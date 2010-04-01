@@ -121,7 +121,7 @@ void mexFunction(	int nlhs, mxArray *plhs[],
         for( GW_VertexIterator VertIt = v->BeginVertexIterator(); VertIt!=v->EndVertexIterator(); ++VertIt ){
         	GW_GeodesicVertex* pNewVert = (GW_GeodesicVertex*) *VertIt;
             GW_ASSERT( pNewVert!=NULL );
-            neigh_idx[nb_neigh++] = double(pNewVert->GetID())+1;
+            neigh_idx[nb_neigh++] = double(pNewVert->GetID());
         }
         mxSetFieldByNumber(plhs[0],point,neigh_idx_field,field_value2);
     }    
