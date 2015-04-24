@@ -1,0 +1,1 @@
+Fast eikonal solver on 2D/3D regular grids and 2D/3D meshes, with various applications, such as surface remeshing, image sampling and meshing, constrained domain meshing.
